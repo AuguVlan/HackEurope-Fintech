@@ -2,24 +2,23 @@
 
 ## Components
 
-- Frontend (`frontend/`): operator dashboard for payment creation, webhook simulation, pool/forecast/settlement monitoring.
-- Backend (`backend/app/`): FastAPI REST API with business logic for payments, pools, forecast, settlements, and Stripe simulation.
-- Database (`SQLite`): single-file storage for countries, pools, payments, settlements.
-- ML baseline (`ml/`): deterministic moving-average forecast used by settlement logic.
+- Frontend (`frontend/`): operator dashboard for payment ingestion and underwriting signal monitoring.
+- Backend (`backend/app/`): FastAPI REST API with business logic for payment ingestion, income smoothing, and CatBoost underwriting.
+- Database (`SQLite`): single-file storage for payments and supporting ledger entities.
+- ML module (`ml/`): income-smoothing baseline (`B`), famine/feast trigger logic, and CatBoost default underwriting (`p_default`) with heuristic fallback.
 
 ## Data Flow
 
 1. Operator submits payment from UI to `POST /payments`.
 2. Backend creates payment + Stripe payment intent reference (mock/live placeholder).
 3. Webhook (`/stripe/webhook`) marks payment succeeded.
-4. Successful payment increments source country pool.
-5. Operator runs settlement (`/settlements/run`).
-6. Engine computes base transfer from pool imbalance + forecast adjustment + cap.
-7. Operator executes settlement (`/settlements/{id}/execute`).
-8. Backend creates transfer reference and moves pool balances.
+4. Successful payment is recorded as alternative earnings data.
+5. Operator requests `GET /income-signal?company_id=...`.
+6. Engine computes baseline income `B`, famine/feast triggers, and micro-credit advance/repayment amounts.
+7. CatBoost underwriting estimates `p_default` and assigns risk band.
+8. Fair-lending audit computes disparate impact status.
 
 ## Constraints
 
-- Fixed countries: `COUNTRY_A`, `COUNTRY_B`.
 - Single currency (`EUR`) for MVP.
-- Manual operator token auth for sensitive settlement actions.
+- Current storage schema still contains legacy country/pool/settlement tables for backward compatibility.

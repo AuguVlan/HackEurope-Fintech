@@ -24,6 +24,7 @@ def test_payment_requires_idempotency_key() -> None:
         json={
             "country": "COUNTRY_A",
             "company_id": "acme",
+            "worker_id": "worker-acme",
             "amount_minor": 1000,
             "currency": "EUR",
             "service_type": "routing",
@@ -39,6 +40,7 @@ def test_end_to_end_payment_pool_and_settlement() -> None:
         json={
             "country": "COUNTRY_A",
             "company_id": "acme",
+            "worker_id": "worker-acme",
             "amount_minor": 10000,
             "currency": "EUR",
             "service_type": "routing",
@@ -74,3 +76,61 @@ def test_end_to_end_payment_pool_and_settlement() -> None:
     )
     if run.json()["recommended_minor"] > 0:
         assert execute.status_code == 200
+
+
+def _create_succeeded_payment(idem_key: str, amount_minor: int) -> None:
+    payment = client.post(
+        "/payments",
+        headers={"Idempotency-Key": idem_key},
+        json={
+            "country": "COUNTRY_A",
+            "company_id": "acme",
+            "worker_id": "worker-acme",
+            "amount_minor": amount_minor,
+            "currency": "EUR",
+            "service_type": "routing",
+        },
+    )
+    assert payment.status_code == 200
+    payment_intent = payment.json()["stripe_payment_intent_id"]
+
+    webhook = client.post(
+        "/stripe/webhook",
+        json={
+            "type": "payment_intent.succeeded",
+            "data": {"object": {"id": payment_intent}},
+        },
+    )
+    assert webhook.status_code == 200
+
+
+def test_forecast_method_switches_with_more_history() -> None:
+    for i in range(10):
+        _create_succeeded_payment(f"idem-history-{i}", 10000 + i * 250)
+
+    res = client.get("/forecast", params={"country": "COUNTRY_A", "period": "2026-02-P2"})
+    assert res.status_code == 200
+    body = res.json()
+
+    assert body["method"] in {"catboost-underwriting-v1", "heuristic-underwriting-v1"}
+    assert body["trigger_state"] in {"famine", "feast", "stable"}
+    assert 0.0 <= body["p_default"] <= 1.0
+    assert body["risk_band"] in {"low", "medium", "high"}
+    assert 0.0 <= body["fair_lending_disparate_impact_ratio"] <= 1.0
+
+
+def test_income_signal_company_endpoint() -> None:
+    for i in range(12):
+        _create_succeeded_payment(f"idem-company-{i}", 9500 + i * 180)
+
+    res = client.get("/income-signal", params={"worker_id": "worker-acme", "company_id": "acme", "period": "2026-02-P2"})
+    assert res.status_code == 200
+    body = res.json()
+
+    assert body["worker_id"] == "worker-acme"
+    assert body["company_id"] == "acme"
+    assert body["method"] in {"catboost-underwriting-v1", "heuristic-underwriting-v1"}
+    assert body["trigger_state"] in {"famine", "feast", "stable"}
+    assert 0.0 <= body["p_default"] <= 1.0
+    assert body["default_state"] in {"current", "delinquent", "default", "unknown"}
+    assert "repayment_on_time_rate" in body

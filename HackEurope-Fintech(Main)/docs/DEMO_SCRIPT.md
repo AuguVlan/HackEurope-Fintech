@@ -6,30 +6,26 @@
 - Open frontend `index.html`.
 - Show operator token and API base URL.
 
-## 0:45 - 2:00 Create and settle incoming payment
+## 0:45 - 2:00 Ingest alternative earnings data
 
-- Create payment for `COUNTRY_A`.
+- Create succeeded payment records for platform `acme`.
 - Show generated payment intent id.
 - Simulate Stripe success webhook.
-- Refresh pools and show `COUNTRY_A` balance increase.
+- Emphasize this as digital earnings history ingestion.
 
-## 2:00 - 3:30 Forecast-driven settlement
+## 2:00 - 3:45 Income smoothing and underwriting
 
-- Load forecast for `COUNTRY_A` and `COUNTRY_B`.
-- Explain net signal and confidence.
-- Run settlement proposal and show recommended transfer with rationale.
-
-## 3:30 - 5:00 Execute settlement
-
-- Execute the proposed settlement.
-- Show updated status = `executed`.
-- Show pool rebalance between countries.
+- Call `GET /income-signal?company_id=acme&period=2026-02-P2`.
+- Explain baseline income `B`, famine/feast trigger, and micro-credit advance/repayment.
+- Explain CatBoost `p_default` and risk band.
+- Show fair-lending disparate impact status.
 
 ## 5:00 - 6:30 Reliability and fallback
 
 - Show `POST /stripe/reconcile` fallback if webhook is unstable.
 - Mention idempotency protection on payment creation.
+- Mention heuristic underwriting fallback if CatBoost/data is unavailable.
 
 ## 6:30 - 7:00 Close
 
-- Recap: payment intake -> pools -> forecast -> settlement proposal -> execution.
+- Recap: earnings ingestion -> income smoothing -> CatBoost underwriting -> fair-lending checks.

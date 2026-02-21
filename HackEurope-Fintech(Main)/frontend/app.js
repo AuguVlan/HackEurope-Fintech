@@ -34,8 +34,8 @@ async function loadPools() {
 }
 
 async function loadForecast() {
-  const country = document.getElementById("forecastCountry").value;
-  const forecast = await callApi(`/forecast?country=${country}`);
+  const companyId = document.getElementById("signalCompanyId").value.trim();
+  const forecast = await callApi(`/income-signal?company_id=${encodeURIComponent(companyId)}`);
   document.getElementById("forecastOutput").textContent = JSON.stringify(forecast, null, 2);
 }
 

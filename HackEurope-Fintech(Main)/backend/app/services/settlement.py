@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 import sqlite3
 
 from ..config import settings
@@ -8,7 +8,7 @@ from .stripe_adapter import create_transfer
 
 
 def current_period(now: datetime | None = None) -> str:
-    now = now or datetime.utcnow()
+    now = now or datetime.now(timezone.utc)
     half = "P1" if now.day <= 15 else "P2"
     return f"{now.year}-{now.month:02d}-{half}"
 

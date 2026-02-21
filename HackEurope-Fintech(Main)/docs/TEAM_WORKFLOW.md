@@ -26,10 +26,10 @@
 1. Backend skeleton + health endpoints.
 2. SQLite schema + seed data.
 3. Stripe payment intake + webhook.
-4. Settlement engine v1.
-5. Forecast module v1.
-6. Frontend payment + pools dashboard.
-7. Frontend settlement dashboard + execute action.
+4. Income smoothing engine (`B`, famine/feast) v1.
+5. CatBoost underwriting (`p_default`) + fallback v1.
+6. Fair-lending disparate impact audit v1.
+7. Frontend payment + income signal dashboard.
 8. E2E smoke tests + reset script.
 9. Demo script and architecture slide support.
 

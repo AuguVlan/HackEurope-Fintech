@@ -9,7 +9,7 @@
 <body>
   <header>
     <h1>BaaS Operator Dashboard</h1>
-    <p>2-country pooling, forecasting, and settlement demo</p>
+    <p>B2B ledger demo for gig-platform income smoothing and CatBoost underwriting</p>
   </header>
 
   <main class="grid">
@@ -39,7 +39,7 @@
     </section>
 
     <section class="card">
-      <h2>Pools</h2>
+      <h2>Legacy Pools (Compatibility)</h2>
       <table>
         <thead><tr><th>Country</th><th>Balance</th><th>Currency</th></tr></thead>
         <tbody id="poolsBody"></tbody>
@@ -47,19 +47,16 @@
     </section>
 
     <section class="card">
-      <h2>Forecast</h2>
-      <label>Country
-        <select id="forecastCountry">
-          <option>COUNTRY_A</option>
-          <option>COUNTRY_B</option>
-        </select>
+      <h2>Income Signal</h2>
+      <label>Company ID
+        <input id="signalCompanyId" value="acme" />
       </label>
-      <button id="loadForecast">Load Forecast</button>
+      <button id="loadForecast">Load Income Signal</button>
       <pre id="forecastOutput"></pre>
     </section>
 
     <section class="card">
-      <h2>Settlement</h2>
+      <h2>Legacy Settlement (Compatibility)</h2>
       <button id="runSettlement">Run Settlement</button>
       <button id="loadSettlements">Refresh Settlements</button>
       <table>
