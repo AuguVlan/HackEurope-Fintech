@@ -6,7 +6,10 @@ from .database import init_db
 from .routes import forecast, health, payments, pools, settlements, stripe, transaction_retrieval
 
 app = FastAPI(title=settings.app_name)
-
+origins = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
