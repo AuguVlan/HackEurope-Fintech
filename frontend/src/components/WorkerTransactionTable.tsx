@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { ChevronDown, Search, Filter } from 'lucide-react';
 import { Card, Button, Badge } from './ui';
-import { formatCurrency, formatDateTime, getStatusBadgeClass } from '../lib/utils';
-import { cn } from '../lib/cn';
-import type { JournalEntry, Posting, Account } from '../api';
+// import { formatCurrency, formatDateTime, getStatusBadgeClass } from '../lib/utils';
+// import { cn } from '../lib/cn';
+import type { JournalEntry, Posting, Account } from '../hooks/api';
 
-interface Transaction {
+export interface Transaction {
   id: number;
   timestamp: number;
   type: string;
@@ -128,10 +128,10 @@ export const WorkerTransactionTable: React.FC<WorkerTransactionTableProps> = ({
                 onClick={() => onRowClick?.(tx)}
                 className="border-b border-border/20 hover:bg-card/50 transition-colors cursor-pointer"
               >
-                <td className="py-3 px-4 text-muted-foreground">{formatDateTime(tx.timestamp)}</td>
+                {/* <td className="py-3 px-4 text-muted-foreground">{formatDateTime(tx.timestamp)}</td> */}
                 <td className="py-3 px-4 font-mono text-xs">{tx.from_account || '—'}</td>
                 <td className="py-3 px-4 font-mono text-xs">{tx.to_account || '—'}</td>
-                <td className="py-3 px-4 text-right">{formatCurrency(tx.amount_minor, tx.currency)}</td>
+                {/* <td className="py-3 px-4 text-right">{formatCurrency(tx.amount_minor, tx.currency)}</td> */}
                 <td className="py-3 px-4 text-right text-muted-foreground">
                   {tx.amount_usd_cents ? `$${(tx.amount_usd_cents / 100).toFixed(2)}` : '—'}
                 </td>
@@ -175,12 +175,12 @@ export const WorkerTransactionTable: React.FC<WorkerTransactionTableProps> = ({
                 <button
                   key={i + 1}
                   onClick={() => setPage(i + 1)}
-                  className={cn(
-                    'w-8 h-8 rounded-lg transition-colors',
-                    page === i + 1
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted/20 text-foreground hover:bg-muted/30'
-                  )}
+                  // className={cn(
+                  //   'w-8 h-8 rounded-lg transition-colors',
+                  //   page === i + 1
+                  //     ? 'bg-primary text-primary-foreground'
+                  //     : 'bg-muted/20 text-foreground hover:bg-muted/30'
+                  // )}
                 >
                   {i + 1}
                 </button>

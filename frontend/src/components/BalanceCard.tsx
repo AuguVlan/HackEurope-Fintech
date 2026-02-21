@@ -1,60 +1,52 @@
 import React from 'react';
 import { LineChart, Line, ResponsiveContainer } from 'recharts';
 import { TrendingUp, TrendingDown } from 'lucide-react';
-import { Card, Stat } from './ui';
+import { Card } from './ui'; // Ensure Card is exported from ./ui/index.ts
 import { formatCurrency, calculatePercentageChange, generateSparklineData } from '../lib/utils';
-import { cn } from '../lib/cn';
 
+// 1. Unified Interfaces
 interface BalanceCardProps {
   currency: string;
   total: number;
+  previousTotal?: number;
+  history?: number[];
   accounts?: number;
 }
 
-export const BalanceCard: React.FC<BalanceCardProps> = ({ currency, total, accounts = 1 }) => {
-  const change = calculatePercentageChange();
-  const sparklineData = generateSparklineData().map((value, index) => ({
-    index,
-    value: 50 + value,
-  }));
+export const BalanceCard: React.FC<BalanceCardProps> = ({ 
+  currency, 
+  total, 
+  previousTotal = 0, 
+  history = [0, 0, 0, 0], // Default history to avoid SVG errors
+  accounts = 1 
+}) => {
+  const change = calculatePercentageChange(total, previousTotal);
+  const isPositive = total >= previousTotal;
 
   return (
-    <Card className="col-span-1">
-      <div className="flex items-start justify-between mb-4">
+    <Card className="p-6"> {/* Use the actual Card component from your UI */}
+      <div className="flex justify-between items-start mb-4">
         <div>
-          <p className="text-muted-foreground text-sm mb-1">Total {currency}</p>
-          <h3 className="text-2xl font-bold text-foreground">{formatCurrency(total, currency)}</h3>
+          <p className="text-sm text-muted-foreground mb-1">{currency} Balance</p>
+          <h3 className="text-2xl font-bold">{formatCurrency(total, currency)}</h3>
         </div>
-        <div className={cn('rounded-lg p-2', change >= 0 ? 'bg-secondary/10' : 'bg-destructive/10')}>
-          {change >= 0 ? (
-            <TrendingUp className="w-5 h-5 text-secondary" />
-          ) : (
-            <TrendingDown className="w-5 h-5 text-destructive" />
-          )}
+        <div className={`flex items-center gap-1 text-sm ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+          {isPositive ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
+          {change}
         </div>
       </div>
-
-      <div className="h-12 mb-4">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={sparklineData}>
-            <Line
-              type="monotone"
-              dataKey="value"
-              stroke={change >= 0 ? '#2ecc71' : '#e74c3c'}
-              strokeWidth={2}
-              dot={false}
-              isAnimationActive={false}
-            />
-          </LineChart>
-        </ResponsiveContainer>
+      
+      {/* Sparkline */}
+      <div className="h-12 w-full mb-4">
+        <svg viewBox="0 0 100 30" className="w-full h-full stroke-primary fill-none opacity-50">
+          <polyline 
+            strokeWidth="2"
+            points={generateSparklineData(history, 100, 30)} 
+          />
+        </svg>
       </div>
-
-      <div className="flex items-center justify-between text-xs">
-        <span className="text-muted-foreground">{accounts} pool{accounts !== 1 ? 's' : ''}</span>
-        <span className={cn(change >= 0 ? 'text-secondary' : 'text-destructive')}>
-          {change > 0 ? '+' : ''}{change.toFixed(1)}% this month
-        </span>
-      </div>
+      
+      <p className="text-xs text-muted-foreground">{accounts} Linked Accounts</p>
     </Card>
   );
 };
@@ -63,6 +55,7 @@ interface CurrencyTotal {
   currency: string;
   total: number;
   accounts: number;
+  history?: number[]; // Added to pass to BalanceCard
 }
 
 interface BalanceGridProps {
@@ -75,7 +68,7 @@ export const BalanceGrid: React.FC<BalanceGridProps> = ({ data, isLoading }) => 
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
         {[1, 2, 3].map((i) => (
-          <Card key={i} className="h-48 animate-pulse bg-muted/10" />
+          <Card key={i} className="h-40 animate-pulse bg-muted/20" />
         ))}
       </div>
     );
@@ -89,6 +82,7 @@ export const BalanceGrid: React.FC<BalanceGridProps> = ({ data, isLoading }) => 
           currency={item.currency}
           total={item.total}
           accounts={item.accounts}
+          history={item.history || [20, 40, 35, 50]} // Mock history if missing
         />
       ))}
     </div>

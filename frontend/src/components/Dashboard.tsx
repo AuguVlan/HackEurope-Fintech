@@ -8,10 +8,28 @@ import { LiquidityHealthPanel } from './LiquidityHealth';
 import { MetricsPanel } from './MetricsPanel';
 import { ActivityFeed } from './ActivityFeed';
 import { useLedgerState, useMetrics } from '../hooks/useApi';
-import { mockActivityFeed, api } from '../api';
+import { mockActivityFeed, api } from '../hooks/api';
 import { Card } from './ui';
-import { toast } from '../lib/toast';
-import type { Transaction, Account } from '../api';
+import type { Transaction } from './WorkerTransactionTable'
+// import { toast } from '../lib/toast';
+import type { Account } from '../hooks/api';
+
+const MOCK_METRICS = {
+  gross_usd_cents_open: 5000000, 
+  net_usd_cents_if_settle_now: 1250000, 
+  queued_count: 14,
+  compression_ratio: 75
+};
+
+const MOCK_LEDGER_STATE = {
+  accounts: [
+    { currency: 'USD', balance_minor: 2500000, id: 'pool-1' },
+    { currency: 'EUR', balance_minor: 1800000, id: 'pool-2' }
+  ],
+  open_obligations: [
+    { id: '1', from_pool: 'POOL_A', to_pool: 'POOL_B', amount_usd_cents: 50000, status: 'open' }
+  ]
+};
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -25,11 +43,14 @@ const queryClient = new QueryClient({
 export const DashboardContent: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isSettling, setIsSettling] = useState(false);
-  const [transactionDetail, setTransactionDetail] = useState<Transaction | null>(null);
+  // const [transactionDetail, setTransactionDetail] = useState<Transaction | null>(null);
 
-  const { data: ledgerState, isLoading: stateLoading } = useLedgerState();
-  const { data: metrics, isLoading: metricsLoading } = useMetrics();
-
+  // const { data: ledgerState, isLoading: stateLoading } = useLedgerState();
+  // const { data: metrics, isLoading: metricsLoading } = useMetrics();
+  const ledgerState = MOCK_LEDGER_STATE;
+  const metrics = MOCK_METRICS;
+  const stateLoading = false; 
+  const metricsLoading = false;
   // Group accounts by currency
   const currencyTotals = ledgerState?.accounts.reduce(
     (acc, account) => {
@@ -68,15 +89,15 @@ export const DashboardContent: React.FC = () => {
       const response = await api.runSettlement({ threshold_usd_cents: 0 });
       const data = response.data as any;
       if (data.ok) {
-        toast('Settlement executed successfully', 'success');
+        // toast('Settlement executed successfully', 'success');
         // Auto-refetch after settlement
         queryClient.invalidateQueries({ queryKey: ['ledgerState'] });
         queryClient.invalidateQueries({ queryKey: ['metrics'] });
       } else {
-        toast(data.message || 'Settlement failed', 'error');
+        // toast(data.message || 'Settlement failed', 'error');
       }
     } catch (error: any) {
-      toast(error.message || 'Settlement failed', 'error');
+      // toast(error.message || 'Settlement failed', 'error');
     } finally {
       setIsSettling(false);
     }
@@ -145,16 +166,16 @@ export const DashboardContent: React.FC = () => {
               transactions={transactions}
               accounts={ledgerState?.accounts || []}
               isLoading={stateLoading}
-              onRowClick={setTransactionDetail}
+              // onRowClick={setTransactionDetail}
             />
 
             {/* Detail Panel */}
-            {transactionDetail && (
+            {/* {transactionDetail && ( */}
               <Card className="col-span-full">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold">Transaction Details</h3>
                   <button
-                    onClick={() => setTransactionDetail(null)}
+                    // onClick={() => setTransactionDetail(null)}
                     className="text-muted-foreground hover:text-foreground"
                   >
                     ✕
@@ -163,23 +184,23 @@ export const DashboardContent: React.FC = () => {
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <p className="text-muted-foreground">From</p>
-                    <p className="font-mono font-semibold">{transactionDetail.from_account}</p>
+                    {/* <p className="font-mono font-semibold">{transactionDetail.from_account}</p> */}
                   </div>
                   <div>
                     <p className="text-muted-foreground">To</p>
-                    <p className="font-mono font-semibold">{transactionDetail.to_account}</p>
+                    {/* <p className="font-mono font-semibold">{transactionDetail.to_account}</p> */}
                   </div>
                   <div>
                     <p className="text-muted-foreground">Amount (USD)</p>
-                    <p className="font-semibold">${(transactionDetail.amount_usd_cents! / 100).toFixed(2)}</p>
+                    {/* <p className="font-semibold">${(transactionDetail.amount_usd_cents! / 100).toFixed(2)}</p> */}
                   </div>
                   <div>
                     <p className="text-muted-foreground">Status</p>
-                    <p className="font-semibold text-secondary">{transactionDetail.status}</p>
+                    {/* <p className="font-semibold text-secondary">{transactionDetail.status}</p> */}
                   </div>
                 </div>
               </Card>
-            )}
+            {/* )} */}
           </div>
         </main>
       </div>
@@ -187,10 +208,12 @@ export const DashboardContent: React.FC = () => {
   );
 };
 
-export const Dashboard: React.FC = () => {
+const Dashboard: React.FC = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <DashboardContent />
     </QueryClientProvider>
   );
 };
+
+export default Dashboard;

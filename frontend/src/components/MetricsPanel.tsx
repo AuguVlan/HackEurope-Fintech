@@ -3,7 +3,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { Card, Stat } from './ui';
 import { formatUSD } from '../lib/utils';
 import { Send, FileText, CheckCircle2, TrendingUp, Clock } from 'lucide-react';
-import type { Metrics } from '../api';
+import type { Metrics } from '../hooks/api';
 
 interface MetricsPanelProps {
   metrics: Metrics;
@@ -13,6 +13,7 @@ interface MetricsPanelProps {
 const COLORS = ['#2ecc71', '#3498db', '#e74c3c', '#f39c12'];
 
 export const MetricsPanel: React.FC<MetricsPanelProps> = ({ metrics, isLoading }) => {
+  // Logic remains the same
   const compressionRatio = metrics.gross_usd_cents_open > 0
     ? Math.round(((metrics.gross_usd_cents_open - metrics.net_usd_cents_if_settle_now) / metrics.gross_usd_cents_open) * 100)
     : 0;
@@ -69,6 +70,7 @@ export const MetricsPanel: React.FC<MetricsPanelProps> = ({ metrics, isLoading }
                       dataKey="value"
                       startAngle={90}
                       endAngle={450}
+                      isAnimationActive={false} // Faster rendering for hackathons
                     >
                       <Cell fill="#2ecc71" />
                       <Cell fill="#444" />
@@ -87,7 +89,7 @@ export const MetricsPanel: React.FC<MetricsPanelProps> = ({ metrics, isLoading }
         <div className="pt-4 border-t border-border/20">
           <Stat
             label="Queued Payouts"
-            value={metrics.queued_count}
+            value={metrics.queued_count.toString()} // Stat likely expects a string
             icon={<Clock className="w-4 h-4 text-yellow-400" />}
           />
         </div>
@@ -96,7 +98,7 @@ export const MetricsPanel: React.FC<MetricsPanelProps> = ({ metrics, isLoading }
           <div className="border-t border-border/20 pt-4">
             <Stat
               label="Transactions Today"
-              value={metrics.transactions_today}
+              value={metrics.transactions_today.toString()}
               icon={<CheckCircle2 className="w-4 h-4 text-secondary" />}
             />
           </div>

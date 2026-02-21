@@ -3,7 +3,7 @@ import { AlertCircle, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { Card, Progress } from './ui';
 import { formatCurrency, healthStatus, healthStatusClass } from '../lib/utils';
 import { cn } from '../lib/cn';
-import type { Account } from '../api';
+import type { Account } from '../hooks/api';
 
 interface LiquidityHealthPanelProps {
   accounts: Account[];

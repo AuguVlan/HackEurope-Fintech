@@ -27,60 +27,40 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
   return (
     <>
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
-          onClick={onClose}
-        />
-      )}
-      <aside
-        className={cn(
-          'fixed left-0 top-0 h-screen w-64 glass border-r border-border/20 z-50 lg:z-auto',
-          'transform transition-transform duration-300 ease-out lg:translate-x-0',
-          isOpen ? 'translate-x-0' : '-translate-x-full'
-        )}
-      >
-        <div className="p-6 border-b border-border/20">
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-              <Zap className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h1 className="font-bold text-lg gradient-text">Ledger</h1>
-              <p className="text-xs text-muted-foreground">Synthetic Liquidity</p>
-            </div>
+      {/* Mobile Overlay */}
+      {isOpen && <div className="menu-toggle" onClick={onClose} />}
+
+      {/* MATCH YOUR CSS: Use 'sidebar' and 'closed' classes */}
+      <aside className={cn('sidebar', !isOpen && 'closed')}>
+        <div className="sidebar-brand">
+          <div className="brand-icon">⚡</div>
+          <div>
+            <h1 className="brand-title">Ledger</h1>
+            <p className="brand-sub">Synthetic Liquidity</p>
           </div>
         </div>
 
-        <nav className="p-6 space-y-2">
+        <nav className="sidebar-nav">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = active === item.label;
             return (
               <button
                 key={item.label}
-                onClick={() => {
-                  setActive(item.label);
-                  onClose?.();
-                }}
-                className={cn(
-                  'w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200',
-                  isActive
-                    ? 'bg-primary/20 text-primary border border-primary/20'
-                    : 'text-muted-foreground hover:bg-card/50 border border-transparent'
-                )}
+                onClick={() => setActive(item.label)}
+                className={cn('nav-btn', isActive && 'active')}
               >
                 <Icon className="w-5 h-5" />
-                <span className="font-medium">{item.label}</span>
+                <span>{item.label}</span>
               </button>
             );
           })}
         </nav>
 
-        <div className="absolute bottom-6 left-6 right-6">
-          <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive/20 transition-colors">
+        <div className="sidebar-footer">
+          <button className="nav-btn nav-btn-danger">
             <LogOut className="w-5 h-5" />
-            <span className="font-medium">Sign Out</span>
+            <span>Sign Out</span>
           </button>
         </div>
       </aside>
@@ -94,33 +74,25 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
   return (
-    <nav className="glass border-b border-border/20 sticky top-0 z-40">
-      <div className="px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={onMenuClick}
-            className="lg:hidden p-2 hover:bg-card/50 rounded-lg transition-colors"
-          >
-            <Menu className="w-5 h-5" />
-          </button>
-          <div>
-            <h2 className="text-lg font-semibold text-foreground">Admin Dashboard</h2>
-            <p className="text-xs text-muted-foreground">Synthetic Liquidity Settlement</p>
-          </div>
+    <nav className="navbar"> {/* Matches .navbar in your CSS */}
+      <div className="navbar-left">
+        <button onClick={onMenuClick} className="menu-toggle">☰</button>
+        <div>
+          <h2 className="navbar-title">Admin Dashboard</h2>
+          <p className="navbar-sub">Synthetic Liquidity Settlement</p>
         </div>
+      </div>
 
-        <div className="flex items-center gap-3">
-          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-card/50 border border-border/20">
-            <div className="w-2 h-2 rounded-full bg-secondary animate-pulse" />
-            <span className="text-xs font-medium text-muted-foreground">DEV</span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent" />
-            <div className="hidden sm:block">
-              <p className="text-sm font-medium">Admin</p>
-              <p className="text-xs text-muted-foreground">System</p>
-            </div>
+      <div className="navbar-right">
+        <div className="status-pill">
+          <span className="pulse" />
+          DEV
+        </div>
+        <div className="avatar-block">
+          <div className="avatar" />
+          <div className="avatar-info">
+            <span className="avatar-name">Admin</span>
+            <span className="avatar-role">System</span>
           </div>
         </div>
       </div>

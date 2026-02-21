@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { api, LedgerState, Metrics } from '../api';
+import { api, LedgerState, Metrics } from './api';
 
 const REFETCH_INTERVAL = 5000; // 5 seconds
 

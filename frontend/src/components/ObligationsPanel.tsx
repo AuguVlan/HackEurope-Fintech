@@ -2,7 +2,7 @@ import React from 'react';
 import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { Card, Button, Badge, Progress } from './ui';
 import { formatUSD, formatNumber } from '../lib/utils';
-import type { Obligation } from '../api';
+import type { Obligation } from '../hooks/api';
 
 interface ObligationsPanelProps {
   obligations: Obligation[];
