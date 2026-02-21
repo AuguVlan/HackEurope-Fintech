@@ -1,22 +1,110 @@
-* { box-sizing: border-box; }
-body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background: #f5f5f5; }
-#root { min-height: 100vh; }
-a { color: #2563eb; }
-table { width: 100%; border-collapse: collapse; background: #fff; }
-th, td { padding: 0.5rem 0.75rem; text-align: left; border-bottom: 1px solid #e5e7eb; }
-th { font-weight: 600; background: #f9fafb; }
-.card { background: #fff; border-radius: 8px; padding: 1rem 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-.btn { display: inline-block; padding: 0.5rem 1rem; border-radius: 6px; border: 1px solid #d1d5db; background: #fff; cursor: pointer; font-size: 0.875rem; }
-.btn:hover { background: #f3f4f6; }
-.btn.primary { background: #2563eb; color: #fff; border-color: #2563eb; }
-.btn.primary:hover { background: #1d4ed8; }
-input, select { padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.875rem; }
-.modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 100; }
-.modal { background: #fff; border-radius: 8px; padding: 1.5rem; max-width: 480px; width: 90%; max-height: 90vh; overflow: auto; }
-.modal h3 { margin-top: 0; }
-.tabs { display: flex; gap: 0; border-bottom: 1px solid #e5e7eb; background: #fff; padding: 0 1rem; }
-.tabs button { padding: 0.75rem 1.25rem; border: none; background: none; cursor: pointer; font-size: 0.9375rem; color: #6b7280; border-bottom: 2px solid transparent; margin-bottom: -1px; }
-.tabs button.active { color: #111; font-weight: 600; border-bottom-color: #2563eb; }
-.layout { max-width: 1200px; margin: 0 auto; padding: 1rem; }
-.grid-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem; }
-.filters { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; margin-bottom: 1rem; }
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 0%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 5%;
+    --card-foreground: 0 0% 98%;
+    --primary: 200 89% 61%;
+    --primary-foreground: 0 0% 0%;
+    --secondary: 160 84% 39%;
+    --secondary-foreground: 0 0% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --muted: 0 0% 30%;
+    --muted-foreground: 0 0% 60%;
+    --accent: 280 85% 65%;
+    --accent-foreground: 0 0% 0%;
+    --popover: 0 0% 8%;
+    --popover-foreground: 0 0% 98%;
+    --border: 0 0% 15%;
+    --input: 0 0% 10%;
+    --ring: 200 89% 61%;
+    --radius: 1.5rem;
+  }
+
+  .dark {
+    --background: 0 0% 0%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 5%;
+    --card-foreground: 0 0% 98%;
+    --primary: 200 89% 61%;
+    --primary-foreground: 0 0% 0%;
+    --secondary: 160 84% 39%;
+    --secondary-foreground: 0 0% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --muted: 0 0% 30%;
+    --muted-foreground: 0 0% 60%;
+    --accent: 280 85% 65%;
+    --accent-foreground: 0 0% 0%;
+    --popover: 0 0% 8%;
+    --popover-foreground: 0 0% 98%;
+    --border: 0 0% 15%;
+    --input: 0 0% 10%;
+    --ring: 200 89% 61%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .glass {
+    @apply bg-card/50 backdrop-blur-xl border border-border/20 shadow-2xl;
+  }
+
+  .glass-sm {
+    @apply bg-card/50 backdrop-blur-md border border-border/20 shadow-lg;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-transparent;
+  }
+
+  .btn-primary {
+    @apply px-4 py-2 rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply px-4 py-2 rounded-xl bg-secondary text-secondary-foreground font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-ghost {
+    @apply px-4 py-2 rounded-xl bg-transparent border border-border hover:bg-card/50 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .input-field {
+    @apply w-full px-4 py-2 rounded-lg bg-input border border-border text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium;
+  }
+
+  .badge-success {
+    @apply badge bg-secondary/10 text-secondary border border-secondary/20;
+  }
+
+  .badge-warning {
+    @apply badge bg-yellow-500/10 text-yellow-400 border border-yellow-500/20;
+  }
+
+  .badge-danger {
+    @apply badge bg-destructive/10 text-destructive border border-destructive/20;
+  }
+
+  .badge-info {
+    @apply badge bg-primary/10 text-primary border border-primary/20;
+  }
+}
