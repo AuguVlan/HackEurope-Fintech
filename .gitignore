@@ -70,3 +70,4 @@ catboost_info/
 
 # Temporary placeholder files
 PASTE_THE_PATH_PRINTED_ABOVE
+.vite/
