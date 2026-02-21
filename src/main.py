@@ -1,29 +1,46 @@
 """
-HackEurope Fintech - Synthetic Liquidity Ledger API
-FastAPI application for managing cross-border liquidity pools and settlements
+HackEurope Fintech - Synthetic Liquidity Ledger API (PDF spec)
+FastAPI application for cross-border liquidity, journal/postings, and settlement.
 """
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import JSONResponse
+from pathlib import Path
+from typing import Optional
+
+from fastapi import FastAPI, HTTPException, Header, Query
+from fastapi.responses import JSONResponse, Response
+from fastapi.staticfiles import StaticFiles
+import csv
+import io
+from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
-from .db import init_db, seed_sample_data
+from .config import PROJECT_ROOT
+from .db import init_db, seed_sample_data, fetch_all_accounts
 from .models import (
-    TransferRequest,
-    TopupRequest,
-    FXRateRequest,
-    HealthResponse,
+    PayoutRequest,
+    SettleRunRequest,
+    AdminTopupRequest,
     LedgerStateResponse,
-    SettlementResponse,
-    TransferExecutionResponse,
+    MetricsResponse,
+    PayoutResponse,
+    SettleRunResponse,
+    AdminTopupResponse,
+    HealthResponse,
+    AccountResponse,
+    ObligationResponse,
+    PayoutQueueItemResponse,
 )
-from .ledger import (
-    execute_transfer,
-    topup_pool,
-    settle_obligations,
-    get_ledger_state,
-    get_pool_info,
-    validate_transfer,
+from .engine import (
+    payout,
+    settle_run,
+    admin_topup,
+    get_state,
+    get_metrics,
+    get_worker_balance,
+    get_worker_transactions,
+    get_worker_summary,
+    get_admin_transactions,
+    get_net_positions,
 )
 from .ingestion.router import router as ingestion_router
 
@@ -32,34 +49,45 @@ __version__ = "0.1.0"
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Application startup and shutdown events"""
-    # Startup
+    """Application startup and shutdown events."""
     init_db()
     seed_sample_data()
     print("✓ Database initialized and seeded with sample data")
     yield
-    # Shutdown
     print("✓ Application shutdown")
 
 
 app = FastAPI(
     title="HackEurope Synthetic Liquidity Ledger",
-    description="Fintech API for cross-border liquidity management and synthetic settlements",
+    description="Fintech API for cross-border liquidity management (PDF spec): payout, settle/run, admin/topup, state, metrics",
     version=__version__,
     lifespan=lifespan,
 )
 
 # Mount Component 1 – Data Ingestion & Normalization pipeline
 app.include_router(ingestion_router)
+# CORS for frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Mount static files (PDF: /static with index.html)
+STATIC_DIR = PROJECT_ROOT / "static"
+if STATIC_DIR.exists():
+    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 
 # ============================================================================
-# Health & Info Endpoints
+# Health & Info
 # ============================================================================
 
 @app.get("/", tags=["info"])
 async def root():
-    """API root endpoint"""
+    """API root."""
     return {
         "service": "HackEurope Synthetic Liquidity Ledger",
         "version": __version__,
@@ -67,199 +95,271 @@ async def root():
         "endpoints": {
             "health": "/health",
             "state": "/state",
-            "pools": "/pools",
-            "transfer": "/transfer",
-            "topup": "/topup",
-            "validate": "/validate",
-            "settle": "/settle",
-            "init": "/init"
-        }
+            "metrics": "/metrics",
+            "payout": "POST /payout",
+            "settle": "POST /settle/run",
+            "admin_topup": "POST /admin/topup",
+            "init": "POST /init",
+        },
     }
 
 
 @app.get("/health", tags=["info"], response_model=HealthResponse)
 async def health():
-    """Health check endpoint"""
-    return {
-        "status": "healthy",
-        "version": __version__
-    }
+    """Health check."""
+    return {"status": "healthy", "version": __version__}
 
 
 # ============================================================================
-# Ledger State Endpoints
+# PDF API: Ledger state & metrics
 # ============================================================================
 
 @app.get("/state", tags=["ledger"], response_model=LedgerStateResponse)
-async def get_state():
-    """Get complete ledger state including pools, obligations, and transfers"""
+async def state():
+    """Get full ledger state: accounts, open obligations, queued payouts."""
     try:
-        state = get_ledger_state()
+        s = get_state()
         return LedgerStateResponse(
-            pools=state["pools"],
-            open_obligations=state["open_obligations"],
-            transfers=state["transfers"]
+            accounts=[AccountResponse(**a) for a in s["accounts"]],
+            open_obligations=[ObligationResponse(**o) for o in s["open_obligations"]],
+            queued_payouts=[PayoutQueueItemResponse(**q) for q in s["queued_payouts"]],
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error fetching ledger state: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/pools", tags=["pools"])
-async def list_pools():
-    """List all liquidity pools"""
+@app.get("/metrics", tags=["ledger"], response_model=MetricsResponse)
+async def metrics():
+    """Get metrics: gross_usd_cents_open, net_usd_cents_if_settle_now, queued_count."""
     try:
-        state = get_ledger_state()
-        return {
-            "count": len(state["pools"]),
-            "pools": state["pools"]
-        }
+        return MetricsResponse(**get_metrics())
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error fetching pools: {str(e)}")
-
-
-@app.get("/pools/{pool_id}", tags=["pools"])
-async def get_pool_details(pool_id: str):
-    """Get detailed information about a specific pool"""
-    return get_pool_info(pool_id)
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ============================================================================
-# Transfer & Settlement Endpoints
+# PDF API: Payout (with Idempotency-Key)
 # ============================================================================
 
-@app.post("/transfer", tags=["transfers"], response_model=TransferExecutionResponse)
-async def initiate_transfer(request: TransferRequest):
+@app.post("/payout", tags=["payout"], response_model=PayoutResponse)
+async def post_payout(
+    request: PayoutRequest,
+    idempotency_key: Optional[str] = Header(None, alias="Idempotency-Key"),
+):
     """
-    Execute a transfer between two pools
-    
-    The destination pool immediately pays out the local amount (if they have liquidity).
-    The source pool incurs an obligation to settle in USD cents.
+    Execute or queue a payout. Header Idempotency-Key (UUID) makes the call idempotent.
     """
     try:
-        result = execute_transfer(
+        result = payout(
             request.from_pool,
             request.to_pool,
-            request.amount_minor
+            request.amount_minor,
+            external_id=idempotency_key,
         )
-        return TransferExecutionResponse(
-            ok=result["ok"],
-            transfer_id=result.get("transfer_id"),
-            amount_usd_cents=result["amount_usd_cents"],
-            route=result["route"]
+        return PayoutResponse(**result)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================================
+# PDF API: Settle / Admin
+# ============================================================================
+
+@app.post("/settle/run", tags=["settlements"], response_model=SettleRunResponse)
+async def post_settle_run(request: SettleRunRequest):
+    """Settle open obligations; only pairs with abs(net) > threshold_usd_cents."""
+    try:
+        result = settle_run(request.threshold_usd_cents)
+        return SettleRunResponse(**result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/admin/topup", tags=["admin"], response_model=AdminTopupResponse)
+async def post_admin_topup(request: AdminTopupRequest):
+    """Top up an account (recorded via journal + posting)."""
+    try:
+        result = admin_topup(request.account_id, request.amount_minor)
+        return AdminTopupResponse(**result)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/init", tags=["admin"])
+async def init_ledger():
+    """Seed accounts and FX rates (clears existing data)."""
+    try:
+        seed_sample_data()
+        s = get_state()
+        return {
+            "ok": True,
+            "message": "Ledger reinitialized with sample data",
+            "accounts_count": len(s["accounts"]),
+            "open_obligations_count": len(s["open_obligations"]),
+            "queued_payouts_count": len(s["queued_payouts"]),
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================================
+# Worker portal (gig workers)
+# ============================================================================
+
+@app.get("/worker/{worker_id}/balance", tags=["worker"])
+async def worker_balance(worker_id: str):
+    """Get worker balance (balance_minor, currency)."""
+    try:
+        return get_worker_balance(worker_id)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/worker/{worker_id}/transactions", tags=["worker"])
+async def worker_transactions(
+    worker_id: str,
+    limit: int = Query(100, le=500),
+    offset: int = Query(0, ge=0),
+    from_ts: Optional[int] = Query(None),
+    to_ts: Optional[int] = Query(None),
+    transaction_type: Optional[str] = Query(None, alias="type"),
+):
+    """Get transaction history for worker. Filters: from_ts, to_ts, type."""
+    try:
+        return get_worker_transactions(
+            worker_id,
+            limit=limit,
+            offset=offset,
+            from_ts=from_ts,
+            to_ts=to_ts,
+            type_filter=transaction_type,
         )
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Transfer failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/validate", tags=["transfers"])
-async def validate_transfer_endpoint(request: TransferRequest):
-    """
-    Validate a transfer without executing it
-    
-    Returns information about fees, FX rates, and whether the transfer can be executed
-    """
-    return validate_transfer(
-        request.from_pool,
-        request.to_pool,
-        request.amount_minor
-    )
-
-
-@app.post("/settle", tags=["settlements"], response_model=SettlementResponse)
-async def initiate_settlement():
-    """
-    Settle all open obligations
-    
-    Computes net positions for each pair of pools and returns settlement instructions.
-    All open obligations are marked as SETTLED.
-    """
+@app.get("/worker/{worker_id}/summary", tags=["worker"])
+async def worker_summary(worker_id: str):
+    """Get worker summary: balance + transaction count."""
     try:
-        result = settle_obligations()
-        return SettlementResponse(
-            ok=result["ok"],
-            settlements=result["settlements"],
-            message=f"Settled {result['settlement_count']} net positions"
+        return get_worker_summary(worker_id)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/workers", tags=["worker"])
+async def list_workers():
+    """List worker account ids (for dropdown)."""
+    try:
+        accounts = fetch_all_accounts()
+        workers = [a for a in accounts if (a.get("kind") or "").strip().upper() == "WORKER"]
+        return {"workers": [{"id": str(w["id"]), "country": w.get("country"), "currency": w.get("currency")} for w in workers]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to list workers: {e}")
+
+
+# ============================================================================
+# Admin dashboard
+# ============================================================================
+
+@app.get("/admin/transactions", tags=["admin"])
+async def admin_transactions(
+    limit: int = Query(200, le=500),
+    offset: int = Query(0, ge=0),
+    from_ts: Optional[int] = Query(None),
+    to_ts: Optional[int] = Query(None),
+    transaction_type: Optional[str] = Query(None, alias="type"),
+    currency: Optional[str] = Query(None),
+):
+    """All transactions (journal entries + postings) with optional filters."""
+    try:
+        return get_admin_transactions(
+            limit=limit,
+            offset=offset,
+            from_ts=from_ts,
+            to_ts=to_ts,
+            type_filter=transaction_type,
+            account_currency=currency,
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Settlement failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
-# ============================================================================
-# Pool Management Endpoints
-# ============================================================================
-
-@app.post("/topup", tags=["pools"])
-async def pool_topup(request: TopupRequest):
-    """Add liquidity to a pool"""
-    return topup_pool(request.pool_id, request.amount_minor)
-
-
-# ============================================================================
-# Admin Endpoints
-# ============================================================================
-
-@app.post("/init", tags=["admin"])
-async def init_ledger():
-    """
-    Initialize ledger with sample data (for testing/demo)
-    
-    Clears all existing data and seeds with sample pools and FX rates
-    """
+@app.get("/admin/obligations/open", tags=["admin"])
+async def admin_obligations_open():
+    """Open obligations (for admin view)."""
     try:
-        seed_sample_data()
-        state = get_ledger_state()
-        return {
-            "ok": True,
-            "message": "Ledger reinitialized with sample data",
-            "pools_count": len(state["pools"]),
-            "obligations_count": len(state["open_obligations"]),
-            "transfers_count": len(state["transfers"])
-        }
+        s = get_state()
+        return {"obligations": s["open_obligations"], "count": len(s["open_obligations"])}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Initialization failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/obligations", tags=["admin"])
-async def list_obligations():
-    """List all open obligations"""
+@app.get("/admin/net_positions", tags=["admin"])
+async def admin_net_positions():
+    """Net positions per pool pair from open obligations."""
     try:
-        state = get_ledger_state()
-        return {
-            "count": len(state["open_obligations"]),
-            "obligations": state["open_obligations"]
-        }
+        return {"net_positions": get_net_positions()}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error fetching obligations: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/transfers", tags=["admin"])
-async def list_transfers():
-    """List recent transfers"""
+@app.get("/admin/export/transactions", tags=["admin"])
+async def admin_export_transactions(
+    from_ts: Optional[int] = Query(None),
+    to_ts: Optional[int] = Query(None),
+    transaction_type: Optional[str] = Query(None, alias="type"),
+    currency: Optional[str] = Query(None),
+):
+    """Export transactions as CSV."""
     try:
-        state = get_ledger_state()
-        return {
-            "count": len(state["transfers"]),
-            "transfers": state["transfers"]
-        }
+        rows = get_admin_transactions(
+            limit=5000,
+            offset=0,
+            from_ts=from_ts,
+            to_ts=to_ts,
+            type_filter=transaction_type,
+            account_currency=currency,
+        )
+        buf = io.StringIO()
+        w = csv.writer(buf)
+        w.writerow(["id", "posting_id", "type", "account_id", "direction", "amount_minor", "created_at", "metadata_json", "external_id"])
+        for r in rows:
+            w.writerow([
+                r.get("id"),
+                r.get("posting_id"),
+                r.get("type"),
+                r.get("account_id"),
+                r.get("direction"),
+                r.get("amount_minor"),
+                r.get("created_at"),
+                r.get("metadata_json"),
+                r.get("external_id"),
+            ])
+        return Response(content=buf.getvalue(), media_type="text/csv", headers={"Content-Disposition": "attachment; filename=transactions.csv"})
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error fetching transfers: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ============================================================================
-# Error Handlers
+# Error handler
 # ============================================================================
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request, exc):
-    """Custom HTTP exception handler"""
     return JSONResponse(
         status_code=exc.status_code,
-        content={
-            "error": exc.detail,
-            "status_code": exc.status_code
-        }
+        content={"error": exc.detail, "status_code": exc.status_code},
     )
 
 
