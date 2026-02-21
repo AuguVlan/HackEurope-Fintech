@@ -59,6 +59,7 @@ class IngestionPipeline:
         worker_id: str,
         *,
         source: Optional[str] = None,
+        delta_override: Optional[int] = None,
     ) -> Dict:
         """
         Run the full pipeline for a single worker.
@@ -70,11 +71,14 @@ class IngestionPipeline:
         source : str, optional
             Restrict to a single named repository. If ``None``, all
             registered repos are queried and results merged.
+        delta_override : int, optional
+            Per-call override for δ. Falls back to instance default.
 
         Returns
         -------
         dict with keys ``earnings``, ``smoothing``, ``source_counts``.
         """
+        delta = delta_override if delta_override is not None else self._delta
         all_earnings: List[EarningRecord] = []
         source_counts: Dict[str, int] = {}
 
@@ -106,7 +110,7 @@ class IngestionPipeline:
 
         smoothing: Optional[IncomeSmoothing] = None
         if all_earnings:
-            smoothing = self._smoothing.compute(all_earnings, self._delta)
+            smoothing = self._smoothing.compute(all_earnings, delta)
 
         return {
             "worker_id": worker_id,
