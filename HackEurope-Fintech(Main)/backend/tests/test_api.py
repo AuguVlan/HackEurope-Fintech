@@ -3,7 +3,6 @@ from fastapi.testclient import TestClient
 from app.config import settings
 from app.database import reset_demo_data
 from app.main import app
-from app.services import forecast as forecast_service
 
 
 client = TestClient(app)
@@ -25,6 +24,7 @@ def test_payment_requires_idempotency_key() -> None:
         json={
             "country": "COUNTRY_A",
             "company_id": "acme",
+            "worker_id": "worker-acme",
             "amount_minor": 1000,
             "currency": "EUR",
             "service_type": "routing",
@@ -40,6 +40,7 @@ def test_end_to_end_payment_pool_and_settlement() -> None:
         json={
             "country": "COUNTRY_A",
             "company_id": "acme",
+            "worker_id": "worker-acme",
             "amount_minor": 10000,
             "currency": "EUR",
             "service_type": "routing",
@@ -84,6 +85,7 @@ def _create_succeeded_payment(idem_key: str, amount_minor: int) -> None:
         json={
             "country": "COUNTRY_A",
             "company_id": "acme",
+            "worker_id": "worker-acme",
             "amount_minor": amount_minor,
             "currency": "EUR",
             "service_type": "routing",
@@ -103,20 +105,32 @@ def _create_succeeded_payment(idem_key: str, amount_minor: int) -> None:
 
 
 def test_forecast_method_switches_with_more_history() -> None:
-    for i in range(3):
-        _create_succeeded_payment(f"idem-sparse-{i}", 10000 + i * 200)
+    for i in range(10):
+        _create_succeeded_payment(f"idem-history-{i}", 10000 + i * 250)
 
-    sparse = client.get("/forecast", params={"country": "COUNTRY_A", "period": "2026-02-P2"})
-    assert sparse.status_code == 200
-    assert sparse.json()["method"] == "moving-average-v1"
+    res = client.get("/forecast", params={"country": "COUNTRY_A", "period": "2026-02-P2"})
+    assert res.status_code == 200
+    body = res.json()
 
-    for i in range(3, 10):
-        _create_succeeded_payment(f"idem-dense-{i}", 10000 + i * 250)
+    assert body["method"] in {"catboost-underwriting-v1", "heuristic-underwriting-v1"}
+    assert body["trigger_state"] in {"famine", "feast", "stable"}
+    assert 0.0 <= body["p_default"] <= 1.0
+    assert body["risk_band"] in {"low", "medium", "high"}
+    assert 0.0 <= body["fair_lending_disparate_impact_ratio"] <= 1.0
 
-    dense = client.get("/forecast", params={"country": "COUNTRY_A", "period": "2026-02-P2"})
-    assert dense.status_code == 200
 
-    if forecast_service.CatBoostRegressor is None:
-        assert dense.json()["method"] == "moving-average-v1"
-    else:
-        assert dense.json()["method"] in {"catboost-v1", "hybrid-catboost-v1"}
+def test_income_signal_company_endpoint() -> None:
+    for i in range(12):
+        _create_succeeded_payment(f"idem-company-{i}", 9500 + i * 180)
+
+    res = client.get("/income-signal", params={"worker_id": "worker-acme", "company_id": "acme", "period": "2026-02-P2"})
+    assert res.status_code == 200
+    body = res.json()
+
+    assert body["worker_id"] == "worker-acme"
+    assert body["company_id"] == "acme"
+    assert body["method"] in {"catboost-underwriting-v1", "heuristic-underwriting-v1"}
+    assert body["trigger_state"] in {"famine", "feast", "stable"}
+    assert 0.0 <= body["p_default"] <= 1.0
+    assert body["default_state"] in {"current", "delinquent", "default", "unknown"}
+    assert "repayment_on_time_rate" in body

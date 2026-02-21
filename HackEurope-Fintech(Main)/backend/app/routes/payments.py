@@ -63,19 +63,21 @@ def create_payment(
             metadata={
                 "country": payload.country,
                 "company_id": payload.company_id,
+                "worker_id": payload.worker_id or payload.company_id,
                 "service_type": payload.service_type,
             },
         )
         cur = conn.execute(
             """
             INSERT INTO payments(
-                company_id, country_id, amount_minor, currency, service_type,
+                company_id, worker_id, country_id, amount_minor, currency, service_type,
                 idempotency_key, stripe_payment_intent_id, status
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 payload.company_id,
+                payload.worker_id or payload.company_id,
                 country_id,
                 payload.amount_minor,
                 payload.currency.upper(),
