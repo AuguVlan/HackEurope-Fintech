@@ -397,9 +397,11 @@ select.input { cursor: pointer; }
   .menu-toggle { display: block; }
   .balance-grid { grid-template-columns: 1fr; }
   .avatar-info { display: none; }
-}
-  font-size: 0.9rem;
-  white-space: pre-wrap;
+
+  code {
+    font-size: 0.9rem;
+    white-space: pre-wrap;
+  }
 }
 
 pre {
