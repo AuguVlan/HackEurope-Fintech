@@ -8,8 +8,8 @@
    - Fastest setup and enough for demo consistency.
 3. Two countries hardcoded:
    - Meets scope and simplifies settlement logic.
-4. Forecast method baseline only:
-   - Moving-average chosen over complex models for predictability and speed.
+4. Forecast method:
+   - CatBoost model enabled for inflow/outflow prediction with moving-average fallback when history is too sparse.
 5. Auth-lite:
    - Single operator token header for settlement-sensitive actions.
 

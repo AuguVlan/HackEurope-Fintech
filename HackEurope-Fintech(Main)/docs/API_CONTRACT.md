@@ -72,7 +72,7 @@ Base URL: `http://localhost:8000`
   "expected_outflow_minor": 0,
   "net_minor": 10000,
   "confidence": 0.85,
-  "method": "moving-average-v1"
+  "method": "catboost-v1"
 }
 ```
 

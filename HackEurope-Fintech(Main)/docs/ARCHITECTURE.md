@@ -5,7 +5,7 @@
 - Frontend (`frontend/`): operator dashboard for payment creation, webhook simulation, pool/forecast/settlement monitoring.
 - Backend (`backend/app/`): FastAPI REST API with business logic for payments, pools, forecast, settlements, and Stripe simulation.
 - Database (`SQLite`): single-file storage for countries, pools, payments, settlements.
-- ML baseline (`ml/`): deterministic moving-average forecast used by settlement logic.
+- ML module (`ml/`): CatBoost-based forecast with moving-average fallback used by settlement logic.
 
 ## Data Flow
 
