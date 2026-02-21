@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hackeurope-fintech"
+version = "0.1.0"
+description = "Fintech solution for HackEurope"
+requires-python = ">=3.8"
+dependencies = [
+    "fastapi==0.128.8",
+    "uvicorn==0.39.0",
+    "pydantic==2.12.5",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "black>=23.0",
+    "flake8>=6.0",
+    "mypy>=1.0",
+]
