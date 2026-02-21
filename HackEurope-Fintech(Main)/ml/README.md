@@ -1,8 +1,18 @@
 # ML Module
 
-Forecasting is now powered by a CatBoost regressor with a deterministic moving-average fallback for sparse histories.
+Income smoothing and underwriting are powered by baseline earnings logic plus CatBoost default-risk estimation.
 
-- Primary method: `catboost-v1` (lag + temporal feature model trained from SQLite history)
-- Fallback method: `moving-average-v1` (used when CatBoost is unavailable or data is too limited)
+- Baseline model: `B = (1/N) * ΣE_t` over a rolling earnings window
+- Trigger logic: famine/feast detection using `B ± delta`
+- Underwriting method: `catboost-underwriting-v1` for `p_default`
+- Fallback method: `heuristic-underwriting-v1` when data/model is unavailable
 - Integration point: backend `app/services/forecast.py`
-- Scope: estimate expected inflow/outflow and compute net signal used in settlement recommendation.
+- Scope: drive micro-credit advance/repayment signals for embedded gig-platform finance.
+
+## Synthetic Data Seeder
+
+Use this to generate reproducible history for demos:
+
+`python ml/generate_synthetic_history.py --platform-count 3 --records-per-platform 14`
+
+Run `python backend/scripts/reset_demo.py` first if you want a clean baseline.
