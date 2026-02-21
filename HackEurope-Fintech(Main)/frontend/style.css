@@ -1,0 +1,90 @@
+:root {
+  --bg: #f5f8ff;
+  --card: #ffffff;
+  --ink: #131a2a;
+  --muted: #5d667a;
+  --accent: #0f62fe;
+  --ok: #1b8f3a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", "Trebuchet MS", sans-serif;
+  color: var(--ink);
+  background: radial-gradient(circle at top right, #dce8ff 0%, var(--bg) 55%);
+}
+
+header {
+  padding: 24px 28px 10px;
+}
+
+header p {
+  margin: 6px 0 0;
+  color: var(--muted);
+}
+
+.grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  padding: 16px 22px 28px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid #dde4f1;
+  border-radius: 10px;
+  padding: 14px;
+}
+
+label {
+  display: block;
+  margin: 8px 0;
+  font-size: 0.95rem;
+}
+
+input, select, button {
+  width: 100%;
+  margin-top: 4px;
+  padding: 9px;
+  border-radius: 8px;
+  border: 1px solid #c9d5ec;
+}
+
+button {
+  margin-top: 10px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+th, td {
+  text-align: left;
+  padding: 8px;
+  border-bottom: 1px solid #e8edf7;
+}
+
+.status {
+  margin-top: 10px;
+  color: var(--ok);
+  font-size: 0.9rem;
+  white-space: pre-wrap;
+}
+
+pre {
+  background: #f2f6ff;
+  border-radius: 8px;
+  padding: 10px;
+  overflow: auto;
+}
