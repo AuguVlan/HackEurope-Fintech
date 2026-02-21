@@ -25,6 +25,7 @@ from .ledger import (
     get_pool_info,
     validate_transfer,
 )
+from .ingestion.router import router as ingestion_router
 
 __version__ = "0.1.0"
 
@@ -47,6 +48,9 @@ app = FastAPI(
     version=__version__,
     lifespan=lifespan,
 )
+
+# Mount Component 1 – Data Ingestion & Normalization pipeline
+app.include_router(ingestion_router)
 
 
 # ============================================================================
