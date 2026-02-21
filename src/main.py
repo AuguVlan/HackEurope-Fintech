@@ -42,6 +42,7 @@ from .engine import (
     get_admin_transactions,
     get_net_positions,
 )
+from .ingestion.router import router as ingestion_router
 
 __version__ = "0.1.0"
 
@@ -63,6 +64,8 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Mount Component 1 – Data Ingestion & Normalization pipeline
+app.include_router(ingestion_router)
 # CORS for frontend
 app.add_middleware(
     CORSMiddleware,

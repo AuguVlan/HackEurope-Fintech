@@ -1,0 +1,863 @@
+{
+  "transactions": [
+    {
+      "id": "1a21a572cade4ad992ffd56bd2557c04",
+      "accountId": "94c4b79cc14c4d68a0db2cddde219d5b",
+      "amount": {
+        "value": {
+          "unscaledValue": "797212",
+          "scale": "2"
+        },
+        "currencyCode": "EUR"
+      },
+      "descriptions": {
+        "original": "acompt",
+        "display": "Acompt"
+      },
+      "dates": {
+        "booked": "2026-02-21"
+      },
+      "identifiers": {
+        "providerTransactionId": "1001"
+      },
+      "types": {
+        "type": "DEFAULT"
+      },
+      "status": "BOOKED",
+      "providerMutability": "MUTABILITY_UNDEFINED"
+    },
+    {
+      "id": "9b05d43153d44096ab47d255e5c067fb",
+      "accountId": "22f8d4bc64764c908747310a6ede386f",
+      "amount": {
+        "value": {
+          "unscaledValue": "238857",
+          "scale": "2"
+        },
+        "currencyCode": "EUR"
+      },
+      "descriptions": {
+        "original": "upwork",
+        "display": "Upwork"
+      },
+      "dates": {
+        "booked": "2026-02-21"
+      },
+      "identifiers": {
+        "providerTransactionId": "1001"
+      },
+      "types": {
+        "type": "DEFAULT"
+      },
+      "status": "BOOKED",
+      "providerMutability": "MUTABILITY_UNDEFINED"
+    },
+    {
+      "id": "a24abb54879b491393dcbef9285fa4e2",
+      "accountId": "c3e4e47871b54bf8afcbbfb60b1c7b7e",
+      "amount": {
+        "value": {
+          "unscaledValue": "73384",
+          "scale": "2"
+        },
+        "currencyCode": "EUR"
+      },
+      "descriptions": {
+        "original": "salaire",
+        "display": "Salaire"
+      },
+      "dates": {
+        "booked": "2026-02-21"
+      },
+      "identifiers": {
+        "providerTransactionId": "1001"
+      },
+      "types": {
+        "type": "DEFAULT"
+      },
+      "status": "BOOKED",
+      "providerMutability": "MUTABILITY_UNDEFINED"
+    },
+    {
+      "id": "f59a5f34815648ecb5025f06bfb640ed",
+      "accountId": "c3e4e47871b54bf8afcbbfb60b1c7b7e",
+      "amount": {
+        "value": {
+          "unscaledValue": "122115",
+          "scale": "2"
+        },
+        "currencyCode": "EUR"
+      },
+      "descriptions": {
+        "original": "cibtp",
+        "display": "Cibtp"
+      },
+      "dates": {
+        "booked": "2026-02-21"
+      },
+      "identifiers": {
+        "providerTransactionId": "1002"
+      },
+      "types": {
+        "type": "DEFAULT"
+      },
+      "status": "BOOKED",
+      "providerMutability": "MUTABILITY_UNDEFINED"
+    },
+    {
+      "id": "4f07c3765d804114ac576c0407dbcf4e",
+      "accountId": "c3e4e47871b54bf8afcbbfb60b1c7b7e",
+      "amount": {
+        "value": {
+          "unscaledValue": "77294",
+          "scale": "2"
+        },
+        "currencyCode": "EUR"
+      },
+      "descriptions": {
+        "original": "salaire",
+        "display": "Salaire"
+      },
+      "dates": {
+        "booked": "2026-01-21"
+      },
+      "identifiers": {
+        "providerTransactionId": "1003"
+      },
+      "types": {
+        "type": "DEFAULT"
+      },
+      "status": "BOOKED",
+      "providerMutability": "MUTABILITY_UNDEFINED"
+    },
+    {
+      "id": "b631862786fe40b1a1446a5d98f5589c",
+      "accountId": "c3e4e47871b54bf8afcbbfb60b1c7b7e",
+      "amount": {
+        "value": {
+          "unscaledValue": "12781",
+          "scale": "1"
+        },
+        "currencyCode": "EUR"
+      },
+      "descriptions": {
+        "original": "cibtp",
+        "display": "Cibtp"
+      },
+      "dates": {
+        "booked": "2026-01-21"
+      },
+      "identifiers": {
+        "providerTransactionId": "1004"
+      },
+      "types": {
+        "type": "DEFAULT"
+      },
+      "status": "BOOKED",
+      "providerMutability": "MUTABILITY_UNDEFINED"
+    },
+    {
+      "id": "de5347f01dda49afbc3752bc915ea46b",
+      "accountId": "94c4b79cc14c4d68a0db2cddde219d5b",
+      "amount": {
+        "value": {
+          "unscaledValue": "800489",
+          "scale": "2"
+        },
+        "currencyCode": "EUR"
+      },
+      "descriptions": {
+        "original": "acompt",
+        "display": "Acompt"
+      },
+      "dates": {
+        "booked": "2026-01-21"
+      },
+      "identifiers": {
+        "providerTransactionId": "1002"
+      },
+      "types": {
+        "type": "DEFAULT"
+      },
+      "status": "BOOKED",
+      "providerMutability": "MUTABILITY_UNDEFINED"
+    },
+    {
+      "id": "f21634c9ba964155905722c6268712c5",
+      "accountId": "22f8d4bc64764c908747310a6ede386f",
+      "amount": {
+        "value": {
+          "unscaledValue": "22837",
+          "scale": "1"
+        },
+        "currencyCode": "EUR"
+      },
+      "descriptions": {
+        "original": "upwork",
+        "display": "Upwork"
+      },
+      "dates": {
+        "booked": "2026-01-21"
+      },
+      "identifiers": {
+        "providerTransactionId": "1002"
+      },
+      "types": {
+        "type": "DEFAULT"
+      },
+      "status": "BOOKED",
+      "providerMutability": "MUTABILITY_UNDEFINED"
+    },
+    {
+      "id": "97986675b0ac493391714283e37e93c2",
+      "accountId": "94c4b79cc14c4d68a0db2cddde219d5b",
+      "amount": {
+        "value": {
+          "unscaledValue": "801788",
+          "scale": "2"
+        },
+        "currencyCode": "EUR"
+      },
+      "descriptions": {
+        "original": "acompt",
+        "display": "Acompt"
+      },
+      "dates": {
+        "booked": "2025-12-21"
+      },
+      "identifiers": {
+        "providerTransactionId": "1003"
+      },
+      "types": {
+        "type": "DEFAULT"
+      },
+      "status": "BOOKED",
+      "providerMutability": "MUTABILITY_UNDEFINED"
+    },
+    {
+      "id": "983b06b51171421ea5f81e9b2f5e3d7f",
+      "accountId": "22f8d4bc64764c908747310a6ede386f",
+      "amount": {
+        "value": {
+          "unscaledValue": "22773",
+          "scale": "1"
+        },
+        "currencyCode": "EUR"
+      },
+      "descriptions": {
+        "original": "upwork",
+        "display": "Upwork"
+      },
+      "dates": {
+        "booked": "2025-12-21"
+      },
+      "identifiers": {
+        "providerTransactionId": "1003"
+      },
+      "types": {
+        "type": "DEFAULT"
+      },
+      "status": "BOOKED",
+      "providerMutability": "MUTABILITY_UNDEFINED"
+    },
+    {
+      "id": "a512f098f711451cb30065e07f222ca4",
+      "accountId": "c3e4e47871b54bf8afcbbfb60b1c7b7e",
+      "amount": {
+        "value": {
+          "unscaledValue": "77776",
+          "scale": "2"
+        },
+        "currencyCode": "EUR"
+      },
+      "descriptions": {
+        "original": "salaire",
+        "display": "Salaire"
+      },
+      "dates": {
+        "booked": "2025-12-21"
+      },
+      "identifiers": {
+        "providerTransactionId": "1005"
+      },
+      "types": {
+        "type": "DEFAULT"
+      },
+      "status": "BOOKED",
+      "providerMutability": "MUTABILITY_UNDEFINED"
+    },
+    {
+      "id": "dddbfd0b4f8d4225bbf331be22ace669",
+      "accountId": "c3e4e47871b54bf8afcbbfb60b1c7b7e",
+      "amount": {
+        "value": {
+          "unscaledValue": "128434",
+          "scale": "2"
+        },
+        "currencyCode": "EUR"
+      },
+      "descriptions": {
+        "original": "cibtp",
+        "display": "Cibtp"
+      },
+      "dates": {
+        "booked": "2025-12-21"
+      },
+      "identifiers": {
+        "providerTransactionId": "1006"
+      },
+      "types": {
+        "type": "DEFAULT"
+      },
+      "status": "BOOKED",
+      "providerMutability": "MUTABILITY_UNDEFINED"
+    },
+    {
+      "id": "1c9ebdf72f984e8d97ee0b63e6d12921",
+      "accountId": "94c4b79cc14c4d68a0db2cddde219d5b",
+      "amount": {
+        "value": {
+          "unscaledValue": "761312",
+          "scale": "2"
+        },
+        "currencyCode": "EUR"
+      },
+      "descriptions": {
+        "original": "acompt",
+        "display": "Acompt"
+      },
+      "dates": {
+        "booked": "2025-11-21"
+      },
+      "identifiers": {
+        "providerTransactionId": "1004"
+      },
+      "types": {
+        "type": "DEFAULT"
+      },
+      "status": "BOOKED",
+      "providerMutability": "MUTABILITY_UNDEFINED"
+    },
+    {
+      "id": "28238df034e54792a8bead174184ff83",
+      "accountId": "c3e4e47871b54bf8afcbbfb60b1c7b7e",
+      "amount": {
+        "value": {
+          "unscaledValue": "121623",
+          "scale": "2"
+        },
+        "currencyCode": "EUR"
+      },
+      "descriptions": {
+        "original": "cibtp",
+        "display": "Cibtp"
+      },
+      "dates": {
+        "booked": "2025-11-21"
+      },
+      "identifiers": {
+        "providerTransactionId": "1008"
+      },
+      "types": {
+        "type": "DEFAULT"
+      },
+      "status": "BOOKED",
+      "providerMutability": "MUTABILITY_UNDEFINED"
+    },
+    {
+      "id": "4582cb6f70ca4d57ac17e88086e64d77",
+      "accountId": "c3e4e47871b54bf8afcbbfb60b1c7b7e",
+      "amount": {
+        "value": {
+          "unscaledValue": "72853",
+          "scale": "2"
+        },
+        "currencyCode": "EUR"
+      },
+      "descriptions": {
+        "original": "salaire",
+        "display": "Salaire"
+      },
+      "dates": {
+        "booked": "2025-11-21"
+      },
+      "identifiers": {
+        "providerTransactionId": "1007"
+      },
+      "types": {
+        "type": "DEFAULT"
+      },
+      "status": "BOOKED",
+      "providerMutability": "MUTABILITY_UNDEFINED"
+    },
+    {
+      "id": "30b3fdeea86a47319c882f6da68f72ae",
+      "accountId": "94c4b79cc14c4d68a0db2cddde219d5b",
+      "amount": {
+        "value": {
+          "unscaledValue": "780879",
+          "scale": "2"
+        },
+        "currencyCode": "EUR"
+      },
+      "descriptions": {
+        "original": "acompt",
+        "display": "Acompt"
+      },
+      "dates": {
+        "booked": "2025-10-21"
+      },
+      "identifiers": {
+        "providerTransactionId": "1005"
+      },
+      "types": {
+        "type": "DEFAULT"
+      },
+      "status": "BOOKED",
+      "providerMutability": "MUTABILITY_UNDEFINED"
+    },
+    {
+      "id": "5508f22ba8bd44d08b6a2531ea14e948",
+      "accountId": "c3e4e47871b54bf8afcbbfb60b1c7b7e",
+      "amount": {
+        "value": {
+          "unscaledValue": "127406",
+          "scale": "2"
+        },
+        "currencyCode": "EUR"
+      },
+      "descriptions": {
+        "original": "cibtp",
+        "display": "Cibtp"
+      },
+      "dates": {
+        "booked": "2025-10-21"
+      },
+      "identifiers": {
+        "providerTransactionId": "1010"
+      },
+      "types": {
+        "type": "DEFAULT"
+      },
+      "status": "BOOKED",
+      "providerMutability": "MUTABILITY_UNDEFINED"
+    },
+    {
+      "id": "69bcdd05d3e343e797918c3ba6aef06f",
+      "accountId": "c3e4e47871b54bf8afcbbfb60b1c7b7e",
+      "amount": {
+        "value": {
+          "unscaledValue": "75465",
+          "scale": "2"
+        },
+        "currencyCode": "EUR"
+      },
+      "descriptions": {
+        "original": "salaire",
+        "display": "Salaire"
+      },
+      "dates": {
+        "booked": "2025-10-21"
+      },
+      "identifiers": {
+        "providerTransactionId": "1009"
+      },
+      "types": {
+        "type": "DEFAULT"
+      },
+      "status": "BOOKED",
+      "providerMutability": "MUTABILITY_UNDEFINED"
+    },
+    {
+      "id": "15919f3c3d514dc194d1fc644a9bc25e",
+      "accountId": "94c4b79cc14c4d68a0db2cddde219d5b",
+      "amount": {
+        "value": {
+          "unscaledValue": "778556",
+          "scale": "2"
+        },
+        "currencyCode": "EUR"
+      },
+      "descriptions": {
+        "original": "acompt",
+        "display": "Acompt"
+      },
+      "dates": {
+        "booked": "2025-09-21"
+      },
+      "identifiers": {
+        "providerTransactionId": "1006"
+      },
+      "types": {
+        "type": "DEFAULT"
+      },
+      "status": "BOOKED",
+      "providerMutability": "MUTABILITY_UNDEFINED"
+    },
+    {
+      "id": "453ecf8867844937adcc3c6f2dc5ce8d",
+      "accountId": "c3e4e47871b54bf8afcbbfb60b1c7b7e",
+      "amount": {
+        "value": {
+          "unscaledValue": "78328",
+          "scale": "2"
+        },
+        "currencyCode": "EUR"
+      },
+      "descriptions": {
+        "original": "salaire",
+        "display": "Salaire"
+      },
+      "dates": {
+        "booked": "2025-09-21"
+      },
+      "identifiers": {
+        "providerTransactionId": "1011"
+      },
+      "types": {
+        "type": "DEFAULT"
+      },
+      "status": "BOOKED",
+      "providerMutability": "MUTABILITY_UNDEFINED"
+    },
+    {
+      "id": "f3e220ee32f74adca36b8f0135edb64a",
+      "accountId": "c3e4e47871b54bf8afcbbfb60b1c7b7e",
+      "amount": {
+        "value": {
+          "unscaledValue": "121913",
+          "scale": "2"
+        },
+        "currencyCode": "EUR"
+      },
+      "descriptions": {
+        "original": "cibtp",
+        "display": "Cibtp"
+      },
+      "dates": {
+        "booked": "2025-09-21"
+      },
+      "identifiers": {
+        "providerTransactionId": "1012"
+      },
+      "types": {
+        "type": "DEFAULT"
+      },
+      "status": "BOOKED",
+      "providerMutability": "MUTABILITY_UNDEFINED"
+    },
+    {
+      "id": "5f272f7f5a024e5da2ff36366c0c0bd2",
+      "accountId": "c3e4e47871b54bf8afcbbfb60b1c7b7e",
+      "amount": {
+        "value": {
+          "unscaledValue": "73138",
+          "scale": "2"
+        },
+        "currencyCode": "EUR"
+      },
+      "descriptions": {
+        "original": "salaire",
+        "display": "Salaire"
+      },
+      "dates": {
+        "booked": "2025-08-21"
+      },
+      "identifiers": {
+        "providerTransactionId": "1013"
+      },
+      "types": {
+        "type": "DEFAULT"
+      },
+      "status": "BOOKED",
+      "providerMutability": "MUTABILITY_UNDEFINED"
+    },
+    {
+      "id": "6b622e92bbe24045be0e852c5da4a627",
+      "accountId": "94c4b79cc14c4d68a0db2cddde219d5b",
+      "amount": {
+        "value": {
+          "unscaledValue": "760482",
+          "scale": "2"
+        },
+        "currencyCode": "EUR"
+      },
+      "descriptions": {
+        "original": "acompt",
+        "display": "Acompt"
+      },
+      "dates": {
+        "booked": "2025-08-21"
+      },
+      "identifiers": {
+        "providerTransactionId": "1007"
+      },
+      "types": {
+        "type": "DEFAULT"
+      },
+      "status": "BOOKED",
+      "providerMutability": "MUTABILITY_UNDEFINED"
+    },
+    {
+      "id": "805286da3e3847ea9745d52a101219c4",
+      "accountId": "c3e4e47871b54bf8afcbbfb60b1c7b7e",
+      "amount": {
+        "value": {
+          "unscaledValue": "73702",
+          "scale": "2"
+        },
+        "currencyCode": "EUR"
+      },
+      "descriptions": {
+        "original": "salaire",
+        "display": "Salaire"
+      },
+      "dates": {
+        "booked": "2025-07-21"
+      },
+      "identifiers": {
+        "providerTransactionId": "1014"
+      },
+      "types": {
+        "type": "DEFAULT"
+      },
+      "status": "BOOKED",
+      "providerMutability": "MUTABILITY_UNDEFINED"
+    },
+    {
+      "id": "c2422967e88c443485af2029741e44ed",
+      "accountId": "94c4b79cc14c4d68a0db2cddde219d5b",
+      "amount": {
+        "value": {
+          "unscaledValue": "750089",
+          "scale": "2"
+        },
+        "currencyCode": "EUR"
+      },
+      "descriptions": {
+        "original": "acompt",
+        "display": "Acompt"
+      },
+      "dates": {
+        "booked": "2025-07-21"
+      },
+      "identifiers": {
+        "providerTransactionId": "1008"
+      },
+      "types": {
+        "type": "DEFAULT"
+      },
+      "status": "BOOKED",
+      "providerMutability": "MUTABILITY_UNDEFINED"
+    },
+    {
+      "id": "08dd788ae3574e1a90666d7673b40978",
+      "accountId": "94c4b79cc14c4d68a0db2cddde219d5b",
+      "amount": {
+        "value": {
+          "unscaledValue": "80882",
+          "scale": "1"
+        },
+        "currencyCode": "EUR"
+      },
+      "descriptions": {
+        "original": "acompt",
+        "display": "Acompt"
+      },
+      "dates": {
+        "booked": "2025-06-21"
+      },
+      "identifiers": {
+        "providerTransactionId": "1009"
+      },
+      "types": {
+        "type": "DEFAULT"
+      },
+      "status": "BOOKED",
+      "providerMutability": "MUTABILITY_UNDEFINED"
+    },
+    {
+      "id": "588bf2e20b8f4608a10a97a999fbd6ed",
+      "accountId": "c3e4e47871b54bf8afcbbfb60b1c7b7e",
+      "amount": {
+        "value": {
+          "unscaledValue": "7276",
+          "scale": "1"
+        },
+        "currencyCode": "EUR"
+      },
+      "descriptions": {
+        "original": "salaire",
+        "display": "Salaire"
+      },
+      "dates": {
+        "booked": "2025-06-21"
+      },
+      "identifiers": {
+        "providerTransactionId": "1015"
+      },
+      "types": {
+        "type": "DEFAULT"
+      },
+      "status": "BOOKED",
+      "providerMutability": "MUTABILITY_UNDEFINED"
+    },
+    {
+      "id": "f18953df221644cabb4bb43d7c763394",
+      "accountId": "94c4b79cc14c4d68a0db2cddde219d5b",
+      "amount": {
+        "value": {
+          "unscaledValue": "78026",
+          "scale": "1"
+        },
+        "currencyCode": "EUR"
+      },
+      "descriptions": {
+        "original": "acompt",
+        "display": "Acompt"
+      },
+      "dates": {
+        "booked": "2025-05-21"
+      },
+      "identifiers": {
+        "providerTransactionId": "1010"
+      },
+      "types": {
+        "type": "DEFAULT"
+      },
+      "status": "BOOKED",
+      "providerMutability": "MUTABILITY_UNDEFINED"
+    },
+    {
+      "id": "f8cdc99f81c04afe87592622ff63933b",
+      "accountId": "c3e4e47871b54bf8afcbbfb60b1c7b7e",
+      "amount": {
+        "value": {
+          "unscaledValue": "75217",
+          "scale": "2"
+        },
+        "currencyCode": "EUR"
+      },
+      "descriptions": {
+        "original": "salaire",
+        "display": "Salaire"
+      },
+      "dates": {
+        "booked": "2025-05-21"
+      },
+      "identifiers": {
+        "providerTransactionId": "1016"
+      },
+      "types": {
+        "type": "DEFAULT"
+      },
+      "status": "BOOKED",
+      "providerMutability": "MUTABILITY_UNDEFINED"
+    },
+    {
+      "id": "30862f61a3ff4643907e8c093fe79081",
+      "accountId": "94c4b79cc14c4d68a0db2cddde219d5b",
+      "amount": {
+        "value": {
+          "unscaledValue": "803757",
+          "scale": "2"
+        },
+        "currencyCode": "EUR"
+      },
+      "descriptions": {
+        "original": "acompt",
+        "display": "Acompt"
+      },
+      "dates": {
+        "booked": "2025-04-21"
+      },
+      "identifiers": {
+        "providerTransactionId": "1011"
+      },
+      "types": {
+        "type": "DEFAULT"
+      },
+      "status": "BOOKED",
+      "providerMutability": "MUTABILITY_UNDEFINED"
+    },
+    {
+      "id": "34df407a20d84016b349b4d3b6cebe17",
+      "accountId": "c3e4e47871b54bf8afcbbfb60b1c7b7e",
+      "amount": {
+        "value": {
+          "unscaledValue": "72803",
+          "scale": "2"
+        },
+        "currencyCode": "EUR"
+      },
+      "descriptions": {
+        "original": "salaire",
+        "display": "Salaire"
+      },
+      "dates": {
+        "booked": "2025-04-21"
+      },
+      "identifiers": {
+        "providerTransactionId": "1017"
+      },
+      "types": {
+        "type": "DEFAULT"
+      },
+      "status": "BOOKED",
+      "providerMutability": "MUTABILITY_UNDEFINED"
+    },
+    {
+      "id": "134884a67b0649dcb1229d88ced56062",
+      "accountId": "c3e4e47871b54bf8afcbbfb60b1c7b7e",
+      "amount": {
+        "value": {
+          "unscaledValue": "73434",
+          "scale": "2"
+        },
+        "currencyCode": "EUR"
+      },
+      "descriptions": {
+        "original": "salaire",
+        "display": "Salaire"
+      },
+      "dates": {
+        "booked": "2025-03-21"
+      },
+      "identifiers": {
+        "providerTransactionId": "1018"
+      },
+      "types": {
+        "type": "DEFAULT"
+      },
+      "status": "BOOKED",
+      "providerMutability": "MUTABILITY_UNDEFINED"
+    },
+    {
+      "id": "48e3fd5ce2144aa8870594ff3aac990e",
+      "accountId": "94c4b79cc14c4d68a0db2cddde219d5b",
+      "amount": {
+        "value": {
+          "unscaledValue": "792826",
+          "scale": "2"
+        },
+        "currencyCode": "EUR"
+      },
+      "descriptions": {
+        "original": "acompt",
+        "display": "Acompt"
+      },
+      "dates": {
+        "booked": "2025-03-21"
+      },
+      "identifiers": {
+        "providerTransactionId": "1012"
+      },
+      "types": {
+        "type": "DEFAULT"
+      },
+      "status": "BOOKED",
+      "providerMutability": "MUTABILITY_UNDEFINED"
+    }
+  ],
+  "nextPageToken": ""
+}
