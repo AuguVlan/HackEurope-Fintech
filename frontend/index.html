@@ -1,12 +1,78 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Synthetic Liquidity Ledger</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BaaS Operator Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>BaaS Operator Dashboard</h1>
+    <p>B2B ledger demo for gig-platform income smoothing and CatBoost underwriting</p>
+  </header>
+
+  <main class="grid">
+    <section class="card">
+      <h2>Settings</h2>
+      <label>API Base URL <input id="apiBase" value="http://localhost:8000" /></label>
+      <label>Operator Token <input id="operatorToken" value="demo-operator-token" /></label>
+      <button id="refreshAll">Refresh All</button>
+    </section>
+
+    <section class="card">
+      <h2>Create Payment</h2>
+      <form id="paymentForm">
+        <label>Country
+          <select id="country">
+            <option>COUNTRY_A</option>
+            <option>COUNTRY_B</option>
+          </select>
+        </label>
+        <label>Company ID <input id="companyId" value="acme" /></label>
+        <label>Amount (minor) <input id="amountMinor" type="number" value="10000" /></label>
+        <label>Currency <input id="currency" value="EUR" /></label>
+        <label>Service Type <input id="serviceType" value="routing" /></label>
+        <button type="submit">Create Payment</button>
+      </form>
+      <div id="paymentStatus" class="status"></div>
+    </section>
+
+    <section class="card">
+      <h2>Legacy Pools (Compatibility)</h2>
+      <table>
+        <thead><tr><th>Country</th><th>Balance</th><th>Currency</th></tr></thead>
+        <tbody id="poolsBody"></tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <h2>Income Signal</h2>
+      <label>Company ID
+        <input id="signalCompanyId" value="acme" />
+      </label>
+      <button id="loadForecast">Load Income Signal</button>
+      <pre id="forecastOutput"></pre>
+    </section>
+
+    <section class="card">
+      <h2>Legacy Settlement (Compatibility)</h2>
+      <button id="runSettlement">Run Settlement</button>
+      <button id="loadSettlements">Refresh Settlements</button>
+      <table>
+        <thead><tr><th>ID</th><th>Period</th><th>From</th><th>To</th><th>Recommended</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody id="settlementsBody"></tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <h2>Stripe Webhook Simulator</h2>
+      <label>Payment Intent ID <input id="simPi" placeholder="pi_mock_..." /></label>
+      <button id="simulateSuccess">Mark Succeeded</button>
+      <div id="webhookStatus" class="status"></div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
 </html>

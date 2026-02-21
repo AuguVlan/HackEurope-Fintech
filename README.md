@@ -1,76 +1,45 @@
-# HackEurope-Fintech
+# BaaS Hackathon Demo (Python + JS + SQLite)
 
-Synthetic Liquidity Ledger – fintech solution for HackEurope (PDF spec). Cross-border liquidity with accounts, journal/postings, obligations, payout queue, and threshold-based settlement.
+Demo-ready B2B Banking-as-a-Service ledger for gig platforms, with embedded income smoothing and CatBoost-powered default-risk underwriting.
 
 ## Project Structure
 
-```
-HackEurope-Fintech/
-├── src/                     # Backend (FastAPI)
-│   ├── main.py              # API routes + worker/admin endpoints
-│   ├── engine.py            # Business logic (payout, settle, topup, metrics)
-│   ├── db.py                # SQLite (7 tables: accounts, journal, obligations, etc.)
-│   ├── models.py
-│   └── config.py
-├── frontend/                # React + TypeScript (Worker Portal + Admin Dashboard)
-│   ├── src/
-│   │   ├── App.tsx          # Tabs: Gig Worker Portal | Company Admin
-│   │   ├── WorkerPortal.tsx # Balance, transactions, filters, detail modal
-│   │   ├── AdminDashboard.tsx # Cards, obligations, net positions, settle/topup/export
-│   │   └── api.ts           # API client
-│   └── package.json
-├── static/
-├── data/                    # ledger.db (git-ignored)
-└── README.md
-```
+- `backend/` FastAPI API, SQLite data layer, business logic, tests.
+- `frontend/` static operator dashboard (HTML/CSS/JS).
+- `ml/` income smoothing + underwriting notes and synthetic history generator.
+- `docs/` architecture, decisions, API contract, demo script.
+- `infra/` environment template.
+- `legacy/` archived previous prototypes and old docs (kept for reference, not active runtime).
 
-## Setup
+## Quickstart (Local)
 
-### 1. Virtual environment
-```bash
-python -m venv venv
-.\venv\Scripts\activate   # Windows
-# source venv/bin/activate  # macOS/Linux
-```
+1. Create a Python environment and install deps:
+   - `cd backend`
+   - `python -m venv .venv`
+   - `.\.venv\Scripts\activate`
+   - `pip install -r requirements.txt`
+2. Configure env:
+   - copy `infra/.env.example` to `backend/.env`
+3. Run API:
+   - `uvicorn app.main:app --reload --port 8000`
+4. Open frontend:
+   - open `frontend/index.html`
+   - set API base URL to `http://localhost:8000`
+5. (Optional) Reset seeded demo state:
+   - `python scripts/reset_demo.py`
 
-### 2. Dependencies
-```bash
-pip install -r requirements.txt
-```
+## Default Demo Credentials
 
-### 3. Run
-```bash
-python -m uvicorn src.main:app --reload
-```
+- Operator token header: `X-Operator-Token: demo-operator-token`
+- Currency: `EUR`
 
-API: `http://localhost:8000`  
-Docs: `http://localhost:8000/docs`  
-Static: `http://localhost:8000/static/`
+## Core Endpoints
 
-### 4. Run frontend (Worker Portal + Admin Dashboard)
-```bash
-cd frontend
-npm install
-npm run dev
-```
-Open `http://localhost:5173`. Backend must be running on port 8000 (CORS enabled).  
-- **Gig Worker Portal**: select worker (mocked auth), view balance and transaction history; filters (date, type, search by id); transaction detail modal.  
-- **Company Admin**: overview cards (gross open, net if settle, queued count, transactions today); open obligations and net positions tables; all transactions with filters; run settlement (threshold), top up pools, export CSV.
+- `GET /health`
+- `POST /payments` (requires `Idempotency-Key`)
+- `POST /stripe/webhook`
+- `POST /stripe/reconcile`
+- `GET /income-signal?worker_id=worker-123&company_id=acme&period=2026-02-P2`
+- `GET /forecast?country=COUNTRY_A&period=2026-02-P2` (legacy compatibility path)
 
-## API (PDF spec)
-
-- **POST /init** – Seed accounts and FX rates
-- **POST /payout** – Execute or queue payout (header: `Idempotency-Key: <UUID>`)
-- **POST /settle/run** – Settle with threshold (body: `{ "threshold_usd_cents": 0 }`)
-- **POST /admin/topup** – Top up account (body: `{ "account_id": "...", "amount_minor": N }`)
-- **GET /state** – Accounts, open obligations, queued payouts
-- **GET /metrics** – gross_usd_cents_open, net_usd_cents_if_settle_now, queued_count, transactions_today
-
-**Worker portal:** `GET /workers`, `GET /worker/{id}/balance`, `GET /worker/{id}/transactions`, `GET /worker/{id}/summary`  
-**Admin:** `GET /admin/transactions`, `GET /admin/obligations/open`, `GET /admin/net_positions`, `GET /admin/export/transactions`
-
-See `API_DOCUMENTATION.md` for full details.
-
-## Dependencies
-
-- FastAPI, Uvicorn, Pydantic (see `requirements.txt`)
+Full details: `docs/API_CONTRACT.md`.

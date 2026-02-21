@@ -3,6 +3,7 @@ venv/
 env/
 ENV/
 .venv
+**/.venv/
 
 # Python
 __pycache__/
@@ -47,6 +48,8 @@ htmlcov/
 *.db
 *.sqlite
 *.sqlite3
+backend/baas_demo.db
+backend/backend/
 
 # Logs
 *.log
@@ -55,3 +58,15 @@ htmlcov/
 .env
 .env.local
 .env.*.local
+
+# Node / frontend artifacts
+node_modules/
+**/node_modules/
+*.tsbuildinfo
+
+# ML training/runtime artifacts
+catboost_info/
+**/catboost_info/
+
+# Temporary placeholder files
+PASTE_THE_PATH_PRINTED_ABOVE
