@@ -1,352 +1,110 @@
-# HackEurope Synthetic Liquidity Ledger
+# HackEurope Synthetic Liquidity Ledger – API (PDF spec)
 
-A fintech solution for cross-border liquidity management using synthetic settlement and FX conversion.
+Cross-border liquidity engine: accounts, journal entries + postings, obligations, payout queue, threshold-based settlement, idempotent payout.
 
 ## Overview
 
-The Synthetic Liquidity Ledger (SLL) enables fast, efficient cross-border payments by:
-
-1. **Immediate Liquidity Provision**: Destination pools provide immediate liquidity in their local currency
-2. **Obligation Tracking**: Source pools incur obligations to settle in USD-denominated amounts
-3. **Batch Settlement**: Obligations are settled in net positions to minimize actual fund transfers
-4. **Synthetic Routes**: Payments route through liquidity pools rather than direct bank transfers
+- **Accounts** (with `min_buffer_minor`) replace pools; all balance changes go through **journal_entries** and **postings**.
+- **Payout**: If destination has liquidity above buffer, execute (journal + posting + obligation); else **queue** in `payout_queue`.
+- **Idempotency**: `Idempotency-Key` header (UUID) on `POST /payout` prevents duplicate journal entries.
+- **Settlement**: Net obligations by pair; only settle pairs where `abs(net) > threshold_usd_cents`.
+- **Metrics**: `GET /metrics` returns gross open, net if settled now, and queued count.
 
 ## Architecture
 
-### Project Structure
+- **db.py** – SQLite, 7 tables: accounts, fx_rates, journal_entries, postings, obligations, settlement_batches, payout_queue.
+- **engine.py** – Payout (idempotency, buffer, queue), settle_run, admin_topup, get_state, get_metrics.
+- **main.py** – FastAPI routes and static mount at `/static`.
 
-```
-HackEurope-Fintech/
-├── src/
-│   ├── __init__.py          # Package initialization
-│   ├── main.py              # FastAPI application and routes
-│   ├── models.py            # Pydantic data models
-│   ├── db.py                # Database operations
-│   ├── ledger.py            # Business logic
-│   ├── config.py            # Configuration and settings
-│   └── logger.py            # Logging setup
-├── data/
-│   └── ledger.db            # SQLite database (git-ignored)
-├── tests/                   # Unit tests directory
-├── requirements.txt         # Python dependencies
-├── pyproject.toml          # Project metadata
-├── .gitignore              # Git ignore rules
-└── README.md               # This file
-```
+## Database schema (PDF)
 
-### Core Components
-
-#### Database Layer (`db.py`)
-- SQLite database with 4 main tables: pools, fx_rates, obligations, transfers
-- Safe query execution with parameter binding
-- Helper functions for CRUD operations
-
-**Tables:**
-- `pools`: Liquidity pools for each country/currency
-- `fx_rates`: Exchange rates relative to USD
-- `obligations`: Open payment obligations between pools
-- `transfers`: Transaction log of all transfers
-
-#### Models (`models.py`)
-- Pydantic BaseModels for API validation and serialization
-- Request models: TransferRequest, TopupRequest, FXRateRequest
-- Response models for all API endpoints
-
-#### Ledger Service (`ledger.py`)
-- Core business logic for the synthetic ledger
-- Transfer execution with automatic obligation creation
-- Settlement computation with net position calculation
-- FX conversion utilities
-
-#### Configuration (`config.py`)
-- Environment-based settings
-- Project paths and directory management
-- Feature flags and logging configuration
+- **accounts**(id TEXT PK, kind, country, currency, balance_minor, min_buffer_minor)
+- **fx_rates**(currency TEXT PK, usd_per_unit REAL)
+- **journal_entries**(id, created_at, type, external_id UNIQUE, metadata_json)
+- **postings**(id, entry_id, account_id, direction, amount_minor)
+- **obligations**(id, created_at, from_pool, to_pool, amount_usd_cents, status, settlement_batch_id)
+- **settlement_batches**(id, created_at, notes)
+- **payout_queue**(id, created_at, from_pool, to_pool, amount_minor, status)
 
 ## API Endpoints
 
-### Health & Info
-- `GET /` - Root endpoint with service info
-- `GET /health` - Health check
+### Health & info
+- **GET /** – Service info and endpoint list
+- **GET /health** – Health check
 
-### Ledger State
-- `GET /state` - Complete ledger state (pools, obligations, transfers)
-- `GET /pools` - List all liquidity pools
-- `GET /pools/{pool_id}` - Get pool details with FX rates
+### Ledger
+- **GET /state** – Full state: accounts, open_obligations, queued_payouts
+- **GET /metrics** – gross_usd_cents_open, net_usd_cents_if_settle_now, queued_count
 
-### Transfers
-- `POST /transfer` - Execute a transfer between pools
-- `POST /validate` - Validate a transfer without executing
-- `POST /topup` - Add liquidity to a pool
+### Payout
+- **POST /payout**  
+  Body: `{ "from_pool": "POOL_UK_GBP", "to_pool": "POOL_BR_BRL", "amount_minor": 20000 }`  
+  Header: **Idempotency-Key**: `<UUID>`  
+  Response: executed (journal_entry_id, obligation_id, amount_usd_cents) or queued (payout_queue_id).
 
-### Settlements
-- `POST /settle` - Settle all open obligations
-- `GET /obligations` - List open obligations
-- `GET /transfers` - List recent transfers
+### Settlement
+- **POST /settle/run**  
+  Body: `{ "threshold_usd_cents": 0 }`  
+  Only pairs with abs(net) > threshold are settled; returns settlement_batch_id and settlements list.
 
 ### Admin
-- `POST /init` - Initialize database with sample data
+- **POST /admin/topup**  
+  Body: `{ "account_id": "POOL_UK_GBP", "amount_minor": 500000 }`  
+  Recorded via journal entry + posting.
+- **POST /init** – Clear and seed accounts + FX rates.
 
-## How It Works
+### Static
+- **GET /static/** – Serves `static/index.html` (links to docs, /state, /metrics).
 
-### Transfer Flow
+## Example usage
 
-1. **Request Transfer**
-   ```json
-   POST /transfer
-   {
-     "from_pool": "UK_GBP",
-     "to_pool": "BR_BRL",
-     "amount_minor": 10000
-   }
-   ```
-
-2. **System Process**
-   - Validates both pools exist
-   - Converts amount from source currency to USD cents using FX rates
-   - Destination pool immediately pays out the local amount (deducts from balance)
-   - Creates obligation: Source pool owes Destination pool in USD cents
-   - Logs the transfer for audit trail
-
-3. **Response**
-   ```json
-   {
-     "ok": true,
-     "transfer_id": 1,
-     "obligation_id": 1,
-     "amount_usd_cents": 125000,
-     "route": "SYNTHETIC"
-   }
-   ```
-
-### Settlement Flow
-
-1. **Request Settlement**
-   ```
-   POST /settle
-   ```
-
-2. **System Process**
-   - Fetches all open obligations
-   - Computes net positions for each pair of pools
-   - Eliminates circular flows
-   - Marks all obligations as SETTLED
-
-3. **Response**
-   ```json
-   {
-     "ok": true,
-     "settlement_count": 3,
-     "settlements": [
-       {
-         "payer": "UK_GBP",
-         "payee": "BR_BRL",
-         "amount_usd_cents": 250000
-       },
-       {
-         "payer": "EU_EUR",
-         "payee": "UK_GBP",
-         "amount_usd_cents": 100000
-       }
-     ]
-   }
-   ```
-
-## Database Schema
-
-### Pools Table
-```sql
-CREATE TABLE pools(
-    id TEXT PRIMARY KEY,        -- e.g., "UK_GBP"
-    country TEXT,               -- e.g., "UK"
-    currency TEXT,              -- e.g., "GBP"
-    balance INTEGER             -- balance in minor units (cents)
-);
-```
-
-### FX Rates Table
-```sql
-CREATE TABLE fx_rates(
-    currency TEXT PRIMARY KEY,  -- e.g., "GBP"
-    usd_per_unit REAL          -- e.g., 1.25 (1 GBP = $1.25)
-);
-```
-
-### Obligations Table
-```sql
-CREATE TABLE obligations(
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    from_pool TEXT,                 -- pool that owes
-    to_pool TEXT,                   -- pool that is owed
-    amount_usd_cents INTEGER,       -- settlement amount in USD cents
-    status TEXT,                    -- "OPEN" or "SETTLED"
-    created_at INTEGER              -- Unix timestamp
-);
-```
-
-### Transfers Table
-```sql
-CREATE TABLE transfers(
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    from_pool TEXT,                 -- source pool
-    to_pool TEXT,                   -- destination pool
-    amount_minor INTEGER,           -- amount in source currency minor units
-    amount_usd_cents INTEGER,       -- equivalent in USD cents
-    route TEXT,                     -- "SYNTHETIC" or other route types
-    created_at INTEGER              -- Unix timestamp
-);
-```
-
-## Setup Instructions
-
-### 1. Create Virtual Environment
-```bash
-python -m venv venv
-.\venv\Scripts\Activate.ps1  # Windows PowerShell
-source venv/bin/activate      # macOS/Linux
-```
-
-### 2. Install Dependencies
-```bash
-pip install -r requirements.txt
-```
-
-### 3. Run the Application
-```bash
-.\venv\Scripts\python -m uvicorn src.main:app --reload
-```
-
-The API will be available at `http://localhost:8000`
-
-### 4. Access Documentation
-- **Swagger UI**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
-
-## Example Usage
-
-### Initialize with Sample Data
+### Seed and state
 ```bash
 curl -X POST http://localhost:8000/init
-```
-
-### Get Current Ledger State
-```bash
 curl http://localhost:8000/state
 ```
 
-### Execute a Transfer
+### Payout (idempotent)
 ```bash
-curl -X POST http://localhost:8000/transfer \
+curl -X POST http://localhost:8000/payout \
   -H "Content-Type: application/json" \
-  -d '{
-    "from_pool": "UK_GBP",
-    "to_pool": "BR_BRL",
-    "amount_minor": 5000
-  }'
+  -H "Idempotency-Key: 550e8400-e29b-41d4-a716-446655440000" \
+  -d '{"from_pool":"POOL_UK_GBP","to_pool":"POOL_BR_BRL","amount_minor":20000}'
 ```
 
-### Validate Transfer
+### Settle
 ```bash
-curl -X POST http://localhost:8000/validate \
+curl -X POST http://localhost:8000/settle/run \
   -H "Content-Type: application/json" \
-  -d '{
-    "from_pool": "UK_GBP",
-    "to_pool": "BR_BRL",
-    "amount_minor": 5000
-  }'
+  -d '{"threshold_usd_cents":0}'
 ```
 
-### Top Up a Pool
+### Top up
 ```bash
-curl -X POST http://localhost:8000/topup \
+curl -X POST http://localhost:8000/admin/topup \
   -H "Content-Type: application/json" \
-  -d '{
-    "pool_id": "UK_GBP",
-    "amount_minor": 50000
-  }'
+  -d '{"account_id":"POOL_UK_GBP","amount_minor":500000}'
 ```
 
-### Execute Settlement
+### Metrics
 ```bash
-curl -X POST http://localhost:8000/settle
+curl http://localhost:8000/metrics
 ```
 
-## Sample Data
+## Seed data
 
-The application initializes with:
+| Account ID   | Country | Currency | Balance (minor) | Min buffer |
+|-------------|---------|----------|-----------------|------------|
+| POOL_UK_GBP | UK      | GBP      | 500000          | 1000       |
+| POOL_BR_BRL | BR      | BRL      | 1000000         | 1000       |
+| POOL_EU_EUR | EU      | EUR      | 800000          | 1000       |
 
-| Pool ID | Country | Currency | Balance |
-|---------|---------|----------|---------|
-| UK_GBP | UK | GBP | £50,000.00 |
-| BR_BRL | Brazil | BRL | ₩100,000.00 |
-| EU_EUR | EU | EUR | €80,000.00 |
+FX: GBP 1.25, BRL 0.20, EUR 1.10 (usd_per_unit).
 
-FX Rates:
-- 1 GBP = $1.25 USD
-- 1 BRL = $0.20 USD
-- 1 EUR = $1.10 USD
+## Netting (settlement)
 
-## Configuration
-
-Environment variables (optional):
-
-```bash
-DEBUG=True              # Enable debug mode
-HOST=0.0.0.0          # Server host
-PORT=8000             # Server port
-RELOAD=True           # Auto-reload on code changes
-LOG_LEVEL=INFO        # Logging level
-ENABLE_DEMO_ENDPOINTS=True  # Enable demo endpoints
-AUTO_SEED_DATA=True   # Auto-seed on startup
-```
-
-## Key Features
-
-✅ **Synthetic Liquidity**: Immediate payment without requiring direct transfers
-✅ **FX Conversion**: Automatic currency conversion using live rates
-✅ **Obligation Tracking**: Accurate record of all debts and credits
-✅ **Net Settlement**: Efficient settlement computation with circular flow elimination
-✅ **Audit Trail**: Complete transaction history for compliance
-✅ **Type Safety**: Pydantic models for all API contracts
-✅ **API Documentation**: Interactive Swagger UI and ReDoc
-✅ **Error Handling**: Comprehensive error responses
-
-## Testing
-
-```bash
-# Run tests (when test suite is added)
-pytest tests/
-
-# Check coverage
-pytest --cov=src tests/
-
-# Type checking
-mypy src/
-```
-
-## Development
-
-The project uses:
-- **FastAPI** 0.128.8 - Modern async web framework
-- **Pydantic** 2.12.5 - Data validation
-- **SQLite** - Embedded database
-- **Uvicorn** 0.39.0 - ASGI server
-
-## Future Enhancements
-
-- [ ] Database migrations with Alembic
-- [ ] Comprehensive test suite
-- [ ] Authentication and authorization
-- [ ] Rate limiting and throttling
-- [ ] WebSocket support for real-time updates
-- [ ] Multi-currency batch processing
-- [ ] Machine learning for demand prediction
-- [ ] Integration with real payment networks
+For each OPEN obligation: key = sorted(from_pool, to_pool). If obligation direction matches key order, add amount to net[key]; else subtract. For each pair, payer/payee and amount = abs(net). Only pairs with abs(net) > threshold are settled and linked to a new settlement_batch.
 
 ## License
 
 HackEurope 2026
-
-## Support
-
-For issues or questions, please refer to the API documentation at `/docs`
