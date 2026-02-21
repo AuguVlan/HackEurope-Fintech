@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
+from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from .config import settings
 # from .database import init_db
 from .routes import forecast, health, payments, pools, settlements, stripe, transaction_retrieval
@@ -22,7 +24,10 @@ app.add_middleware(
 # @app.on_event("startup")
 # def startup_event() -> None:
     # init_db()
-
+app.mount("/assets", StaticFiles(directory="frontend/dist/assets"), name="assets")
+@app.get("/dashboard")
+async def serve_dashboard():
+    return FileResponse("frontend/dist/dashboard.html")
 
 app.include_router(health.router)
 app.include_router(payments.router)
@@ -31,3 +36,4 @@ app.include_router(pools.router)
 app.include_router(forecast.router)
 app.include_router(settlements.router)
 app.include_router(transaction_retrieval.router)
+
