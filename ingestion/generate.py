@@ -48,8 +48,30 @@ COUNTRIES = {
 }
 COUNTRY_LIST = list(COUNTRIES.keys())  # ["DE", "TR"]
 
-# Turkish first names
-FIRST_NAMES = [
+# German names (for DE workers)
+DE_FIRST_NAMES = [
+    "Lukas", "Leon", "Finn", "Jonas", "Felix", "Noah", "Elias", "Paul",
+    "Maximilian", "Ben", "Niklas", "Tim", "Moritz", "Jan", "Philipp",
+    "Julian", "Alexander", "David", "Sebastian", "Tobias", "Stefan",
+    "Thomas", "Michael", "Andreas", "Christian", "Markus", "Daniel",
+    "Hannah", "Emma", "Mia", "Sophia", "Lena", "Anna", "Laura",
+    "Lea", "Marie", "Johanna", "Katharina", "Julia", "Lisa", "Sarah",
+    "Clara", "Amelie", "Frieda", "Charlotte", "Ida", "Greta", "Nora",
+    "Helena", "Franziska", "Marlene", "Louisa", "Theresa", "Eva", "Sabine",
+]
+
+DE_LAST_NAMES = [
+    "Müller", "Schmidt", "Schneider", "Fischer", "Weber", "Meyer",
+    "Wagner", "Becker", "Schulz", "Hoffmann", "Schäfer", "Koch",
+    "Bauer", "Richter", "Klein", "Wolf", "Schröder", "Neumann",
+    "Schwarz", "Zimmermann", "Braun", "Krüger", "Hofmann", "Hartmann",
+    "Lange", "Schmitt", "Werner", "Schmitz", "Krause", "Meier",
+    "Lehmann", "Schmid", "Schulze", "Maier", "Köhler", "Herrmann",
+    "König", "Walter", "Mayer", "Huber", "Kaiser", "Fuchs",
+]
+
+# Turkish names (for TR workers)
+TR_FIRST_NAMES = [
     "Mehmet", "Ahmet", "Mustafa", "Ali", "Hüseyin", "Hasan", "İbrahim",
     "Ömer", "Yusuf", "Murat", "Emre", "Burak", "Serkan", "Oğuz", "Cem",
     "Tuncay", "Selim", "Kemal", "Erkan", "Barış", "Fatih", "Tolga", "Uğur",
@@ -60,7 +82,7 @@ FIRST_NAMES = [
     "Leyla", "Melek", "Naz", "Ece", "Defne", "Selin", "Beren", "İlknur",
 ]
 
-LAST_NAMES = [
+TR_LAST_NAMES = [
     "Yılmaz", "Kaya", "Demir", "Çelik", "Şahin", "Yıldız", "Öztürk",
     "Aydın", "Arslan", "Doğan", "Kılıç", "Aslan", "Çetin", "Koç",
     "Kurt", "Özdemir", "Polat", "Erdoğan", "Aksoy", "Güneş",
@@ -68,6 +90,12 @@ LAST_NAMES = [
     "Ünal", "Acar", "Tekin", "Güler", "Balcı", "Şen", "Karaca",
     "Tunç", "Başaran", "Gündüz", "Ateş", "Kara", "Toprak",
 ]
+
+# Mapping: country → name pools
+NAMES_BY_COUNTRY = {
+    "DE": (DE_FIRST_NAMES, DE_LAST_NAMES),
+    "TR": (TR_FIRST_NAMES, TR_LAST_NAMES),
+}
 
 
 # ── Enums ─────────────────────────────────────────────────────────────
@@ -226,15 +254,19 @@ class WorkerDatasetGenerator:
 
     def _make_identity(self, idx: int) -> Tuple[str, str, str, str, str, str]:
         worker_id = f"WRK-{idx:06d}"
-        first = self.rng.choice(FIRST_NAMES)
-        last = self.rng.choice(LAST_NAMES)
-        name = f"{first} {last}"
-        email = f"{first.lower()}.{last.lower()}@{'gmail' if self.rng.random() > 0.4 else 'outlook'}.com"
-        email = email.replace(" ", "").replace("'", "").replace("ü", "u").replace("ö", "o").replace("ş", "s").replace("ç", "c").replace("ğ", "g").replace("ı", "i").replace("İ", "i")
-        days_ago = self.rng.randint(365, 365 * 3)
-        reg_date = (datetime(2026, 2, 22) - timedelta(days=days_ago)).strftime("%Y-%m-%d")
         country = self.rng.choice(COUNTRY_LIST)  # ~50/50 DE or TR
         currency = COUNTRIES[country]["currency"]
+        firsts, lasts = NAMES_BY_COUNTRY[country]
+        first = self.rng.choice(firsts)
+        last = self.rng.choice(lasts)
+        name = f"{first} {last}"
+        email = f"{first.lower()}.{last.lower()}@{'gmail' if self.rng.random() > 0.4 else 'outlook'}.com"
+        # Normalise special chars for email
+        for old, new in [("ü", "u"), ("ö", "o"), ("ş", "s"), ("ç", "c"), ("ğ", "g"),
+                         ("ı", "i"), ("İ", "i"), ("ä", "a"), (" ", ""), ("'", "")]:
+            email = email.replace(old, new)
+        days_ago = self.rng.randint(365, 365 * 3)
+        reg_date = (datetime(2026, 2, 22) - timedelta(days=days_ago)).strftime("%Y-%m-%d")
         return worker_id, name, email, reg_date, country, currency
 
     def _generate_earnings(self, worker_id: str, cfg: ArchetypeConfig, n_months: int, currency: str, country: str) -> List[MonthlyEarning]:
