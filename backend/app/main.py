@@ -130,7 +130,7 @@ if not dashboard_file.exists():
 if frontend_assets_dir.exists():
     app.mount("/assets", StaticFiles(directory=str(frontend_assets_dir)), name="assets")
 
-@app.get("/dashboard")
+@app.get("/index")
 async def serve_dashboard():
     return FileResponse(str(dashboard_file))
 app.include_router(health.router)

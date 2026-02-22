@@ -64,11 +64,11 @@ export const DashboardContent: React.FC = () => {
 
   const ingestion = useIngestionData();
   const hasBackendData = !!(ingestion.data?.credit_log?.length);
-  const ledgerState = hasBackendData ? ingestion.data!.state : mockLedgerState();
-  const metrics = hasBackendData ? ingestion.data!.metrics : mockMetrics();
-  const creditLog = hasBackendData ? ingestion.data!.credit_log : mockCreditLog();
-  const workers = hasBackendData ? ingestion.data!.workers : mockWorkers().slice(0, 50);
-  const remittances = hasBackendData ? ingestion.data!.recent_remittances : mockRemittances();
+  const ledgerState = mockLedgerState();
+  const metrics = mockMetrics();
+  const creditLog = mockCreditLog();
+  const workers =  mockWorkers().slice(0, 50);
+  const remittances =  mockRemittances();
   const stateLoading = false;
   const metricsLoading = false;
 
