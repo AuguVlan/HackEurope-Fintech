@@ -56,8 +56,7 @@ TideBridge is a Banking-as-a-Service (BaaS) settlement engine designed for taxi 
 ```bash
 cd frontend
 npm install
-npm run dev
-# → http://localhost:5173
+npm run build
 ```
 
 ### Backend (FastAPI)
@@ -132,4 +131,8 @@ MIT License — HackEurope Fintech 2026
 
 ---
 
-Built with ⚡ by the TideBridge team
+Built by:
+- Georg Riekhakainen
+- Nicolas Salapete
+- Charles Montluc
+- Augustin Vlandas
