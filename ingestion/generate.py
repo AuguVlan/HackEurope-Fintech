@@ -41,16 +41,14 @@ DATA_DIR = os.path.join(HERE, "data")
 # Single platform for all workers
 PLATFORM = "GigExpress"
 
-# Two countries: workers earn in Germany (EUR), send remittances to Turkey (TRY)
+# Two countries — roughly 50/50 split
 COUNTRIES = {
-    "DE": {"currency": "EUR", "label": "Germany (earning)"},
-    "TR": {"currency": "TRY", "label": "Turkey (remittance)"},
+    "DE": {"currency": "EUR", "label": "Germany"},
+    "TR": {"currency": "TRY", "label": "Turkey"},
 }
-EARNING_CURRENCY = "EUR"     # workers earn in EUR (Germany)
-REMITTANCE_CURRENCY = "TRY"  # they send TRY to family in Turkey
-EUR_TO_TRY = 38.50           # approximate Feb 2026 rate
+COUNTRY_LIST = list(COUNTRIES.keys())  # ["DE", "TR"]
 
-# Turkish first names (workers are Turkish diaspora in Germany)
+# Turkish first names
 FIRST_NAMES = [
     "Mehmet", "Ahmet", "Mustafa", "Ali", "Hüseyin", "Hasan", "İbrahim",
     "Ömer", "Yusuf", "Murat", "Emre", "Burak", "Serkan", "Oğuz", "Cem",
@@ -104,6 +102,7 @@ class MonthlyEarning:
     net_earning: float
     currency: str = "EUR"
     prev_month_net: float = 0.0          # previous month's net (for continuity)
+    country: str = "DE"
 
 
 @dataclass
@@ -130,30 +129,18 @@ class AdvanceRepayment:
 
 
 @dataclass
-class Remittance:
-    """Monthly remittance sent from DE (EUR) → TR (TRY)."""
-    worker_id: str
-    month: str
-    amount_eur: float            # sent in EUR
-    amount_try: float            # received in TRY
-    exchange_rate: float         # EUR→TRY rate used
-    recipient_country: str = "TR"
-
-
-@dataclass
 class WorkerProfile:
     worker_id: str
     name: str
     email: str
     platform: str
-    country_earning: str               # DE — where they work
-    country_remittance: str            # TR — where family is
+    country: str                       # DE or TR
+    currency: str                      # EUR or TRY
     registration_date: str
     archetype: str
     months_active: int
     earnings: List[MonthlyEarning] = field(default_factory=list)
     expenses: List[MonthlyExpense] = field(default_factory=list)
-    remittances: List[Remittance] = field(default_factory=list)
     repayments: List[AdvanceRepayment] = field(default_factory=list)
     avg_wage: float = 0.0
     income_volatility: float = 0.0
@@ -164,8 +151,6 @@ class WorkerProfile:
     avg_days_late: float = 0.0
     default_count: int = 0
     disposable_income: float = 0.0
-    avg_remittance_eur: float = 0.0    # average monthly remittance in EUR
-    remittance_ratio: float = 0.0      # remittance / net income
 
 
 # ── Archetype Configs ─────────────────────────────────────────────────
@@ -239,7 +224,7 @@ class WorkerDatasetGenerator:
                 self.archetype_counts.append(n)
                 remaining -= n
 
-    def _make_identity(self, idx: int) -> Tuple[str, str, str, str]:
+    def _make_identity(self, idx: int) -> Tuple[str, str, str, str, str, str]:
         worker_id = f"WRK-{idx:06d}"
         first = self.rng.choice(FIRST_NAMES)
         last = self.rng.choice(LAST_NAMES)
@@ -248,9 +233,11 @@ class WorkerDatasetGenerator:
         email = email.replace(" ", "").replace("'", "").replace("ü", "u").replace("ö", "o").replace("ş", "s").replace("ç", "c").replace("ğ", "g").replace("ı", "i").replace("İ", "i")
         days_ago = self.rng.randint(365, 365 * 3)
         reg_date = (datetime(2026, 2, 22) - timedelta(days=days_ago)).strftime("%Y-%m-%d")
-        return worker_id, name, email, reg_date
+        country = self.rng.choice(COUNTRY_LIST)  # ~50/50 DE or TR
+        currency = COUNTRIES[country]["currency"]
+        return worker_id, name, email, reg_date, country, currency
 
-    def _generate_earnings(self, worker_id: str, cfg: ArchetypeConfig, n_months: int) -> List[MonthlyEarning]:
+    def _generate_earnings(self, worker_id: str, cfg: ArchetypeConfig, n_months: int, currency: str, country: str) -> List[MonthlyEarning]:
         """Autoregressive earnings: each month = f(previous month) + noise.
         
         This gives month-to-month continuity instead of i.i.d. random draws.
@@ -284,8 +271,8 @@ class WorkerDatasetGenerator:
             records.append(MonthlyEarning(
                 worker_id=worker_id, month=month_str,
                 gross_earning=gross, platform_fees=fees,
-                net_earning=net, currency=EARNING_CURRENCY,
-                prev_month_net=prev_net,
+                net_earning=net, currency=currency,
+                prev_month_net=prev_net, country=country,
             ))
             prev_gross = gross  # carry forward
 
@@ -372,52 +359,28 @@ class WorkerDatasetGenerator:
         worker.debt_to_income = round(outstanding / worker.avg_wage, 4) if worker.avg_wage > 0 else 0.0
         avg_expense = statistics.mean(e.total for e in worker.expenses) if worker.expenses else 0.0
         worker.disposable_income = round(worker.avg_wage - avg_expense, 2)
-        # Remittance stats
-        if worker.remittances:
-            avg_rem = statistics.mean(r.amount_eur for r in worker.remittances)
-            worker.avg_remittance_eur = round(avg_rem, 2)
-            worker.remittance_ratio = round(avg_rem / worker.avg_wage, 4) if worker.avg_wage > 0 else 0.0
         reg = datetime.strptime(worker.registration_date, "%Y-%m-%d")
         worker.months_active = max(1, (datetime(2026, 2, 22) - reg).days // 30)
-
-    def _generate_remittances(self, worker_id: str, earnings: List[MonthlyEarning]) -> List[Remittance]:
-        """Each month, worker sends 15–40% of net income to family in Turkey."""
-        remit_frac = self.rng.uniform(0.15, 0.40)
-        records: List[Remittance] = []
-        for e in earnings:
-            # Slight monthly variation in what they send
-            frac = remit_frac * self.rng.uniform(0.85, 1.15)
-            amount_eur = round(e.net_earning * frac, 2)
-            # Exchange rate fluctuates ±3% around base
-            rate = EUR_TO_TRY * self.rng.uniform(0.97, 1.03)
-            amount_try = round(amount_eur * rate, 2)
-            records.append(Remittance(
-                worker_id=worker_id, month=e.month,
-                amount_eur=amount_eur, amount_try=amount_try,
-                exchange_rate=round(rate, 4), recipient_country="TR",
-            ))
-        return records
 
     def generate(self) -> List[WorkerProfile]:
         idx = 0
         for arch_cfg, count in zip(ARCHETYPES, self.archetype_counts):
             for _ in range(count):
                 idx += 1
-                wid, name, email, reg = self._make_identity(idx)
+                wid, name, email, reg, country, currency = self._make_identity(idx)
                 n_months = self.rng.randint(*arch_cfg.months_range)
-                earnings = self._generate_earnings(wid, arch_cfg, n_months)
+                earnings = self._generate_earnings(wid, arch_cfg, n_months, currency, country)
                 expenses = self._generate_expenses(wid, earnings, arch_cfg)
-                remittances = self._generate_remittances(wid, earnings)
                 avg_net = statistics.mean(e.net_earning for e in earnings) if earnings else 1000.0
                 repayments = self._generate_repayments(wid, arch_cfg, avg_net, n_months)
                 worker = WorkerProfile(
                     worker_id=wid, name=name, email=email,
                     platform=PLATFORM,
-                    country_earning="DE",
-                    country_remittance="TR",
+                    country=country,
+                    currency=currency,
                     registration_date=reg, archetype=arch_cfg.name.value,
                     months_active=n_months, earnings=earnings,
-                    expenses=expenses, remittances=remittances,
+                    expenses=expenses,
                     repayments=repayments,
                 )
                 self._compute_risk_features(worker)
@@ -441,8 +404,7 @@ class DatasetExporter:
         paths["csv"]        = self._write_flat_csv()
         paths["earnings"]   = self._write_earnings_csv()
         paths["repayments"] = self._write_repayments_csv()
-        paths["remittances"] = self._write_remittances_csv()
-        paths["expenses"]    = self._write_expenses_csv()
+        paths["expenses"]   = self._write_expenses_csv()
         return paths
 
     def _write_json(self) -> str:
@@ -452,19 +414,16 @@ class DatasetExporter:
             d = {
                 "worker_id": w.worker_id, "name": w.name, "email": w.email,
                 "platform": w.platform,
-                "country_earning": w.country_earning,
-                "country_remittance": w.country_remittance,
+                "country": w.country,
+                "currency": w.currency,
                 "registration_date": w.registration_date, "archetype": w.archetype,
                 "months_active": w.months_active, "avg_wage": w.avg_wage,
                 "income_volatility": w.income_volatility, "income_state": w.income_state,
                 "debt_to_income": w.debt_to_income, "repayment_count": w.repayment_count,
                 "on_time_rate": w.on_time_rate, "avg_days_late": w.avg_days_late,
                 "default_count": w.default_count, "disposable_income": w.disposable_income,
-                "avg_remittance_eur": w.avg_remittance_eur,
-                "remittance_ratio": w.remittance_ratio,
                 "earnings": [asdict(e) for e in w.earnings],
                 "expenses": [asdict(e) for e in w.expenses],
-                "remittances": [asdict(r) for r in w.remittances],
                 "repayments": [asdict(r) for r in w.repayments],
             }
             data.append(d)
@@ -475,11 +434,10 @@ class DatasetExporter:
     def _write_flat_csv(self) -> str:
         path = os.path.join(self.data_dir, "workers_500.csv")
         fields = [
-            "worker_id", "name", "platform", "country_earning", "country_remittance",
+            "worker_id", "name", "platform", "country", "currency",
             "archetype", "months_active", "avg_wage", "income_volatility",
             "income_state", "debt_to_income", "repayment_count", "on_time_rate",
             "avg_days_late", "default_count", "disposable_income",
-            "avg_remittance_eur", "remittance_ratio",
         ]
         with open(path, "w", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=fields)
@@ -488,40 +446,26 @@ class DatasetExporter:
                 writer.writerow({
                     "worker_id": w.worker_id, "name": w.name,
                     "platform": w.platform,
-                    "country_earning": w.country_earning,
-                    "country_remittance": w.country_remittance,
+                    "country": w.country,
+                    "currency": w.currency,
                     "archetype": w.archetype, "months_active": w.months_active,
                     "avg_wage": w.avg_wage, "income_volatility": w.income_volatility,
                     "income_state": w.income_state, "debt_to_income": w.debt_to_income,
                     "repayment_count": w.repayment_count, "on_time_rate": w.on_time_rate,
                     "avg_days_late": w.avg_days_late, "default_count": w.default_count,
                     "disposable_income": w.disposable_income,
-                    "avg_remittance_eur": w.avg_remittance_eur,
-                    "remittance_ratio": w.remittance_ratio,
                 })
         return path
 
     def _write_earnings_csv(self) -> str:
         path = os.path.join(self.data_dir, "earnings_detail.csv")
-        fields = ["worker_id", "month", "gross_earning", "platform_fees", "net_earning", "currency", "prev_month_net"]
+        fields = ["worker_id", "month", "gross_earning", "platform_fees", "net_earning", "currency", "prev_month_net", "country"]
         with open(path, "w", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=fields)
             writer.writeheader()
             for w in self.workers:
                 for e in w.earnings:
                     writer.writerow(asdict(e))
-        return path
-
-    def _write_remittances_csv(self) -> str:
-        """One row per worker per month — DE→TR remittance."""
-        path = os.path.join(self.data_dir, "remittances_detail.csv")
-        fields = ["worker_id", "month", "amount_eur", "amount_try", "exchange_rate", "recipient_country"]
-        with open(path, "w", newline="") as f:
-            writer = csv.DictWriter(f, fieldnames=fields)
-            writer.writeheader()
-            for w in self.workers:
-                for r in w.remittances:
-                    writer.writerow(asdict(r))
         return path
 
     def _write_repayments_csv(self) -> str:
@@ -551,26 +495,28 @@ class DatasetExporter:
 
 def print_report(workers: List[WorkerProfile]) -> None:
     print("=" * 80)
-    print("  Synthetic Dataset — 500 Turkish Gig Workers in Germany")
-    print(f"  Platform: {PLATFORM}  |  Earn: EUR (DE)  |  Remit: TRY (TR)")
+    print("  Synthetic Dataset — 500 Gig Workers (DE + TR)")
+    print(f"  Platform: {PLATFORM}  |  Countries: Germany (EUR) & Turkey (TRY)")
     print("=" * 80)
+    # Country split
+    de_count = sum(1 for w in workers if w.country == "DE")
+    tr_count = sum(1 for w in workers if w.country == "TR")
+    print(f"\n  Country Split:  DE={de_count}  TR={tr_count}")
     archetypes: Dict[str, List[WorkerProfile]] = {}
     for w in workers:
         archetypes.setdefault(w.archetype, []).append(w)
-    print(f"\n  {'Archetype':<18} {'Count':>5} {'Avg Wage':>10} {'On-Time%':>9} {'Dflts':>6} {'Remit€':>8} {'Disp.€':>8}")
-    print("  " + "─" * 68)
+    print(f"\n  {'Archetype':<18} {'Count':>5} {'Avg Wage':>10} {'On-Time%':>9} {'Dflts':>6} {'Disp.':>8}")
+    print("  " + "─" * 60)
     for arch_name, group in archetypes.items():
         avg_w = statistics.mean(w.avg_wage for w in group)
         avg_ot = statistics.mean(w.on_time_rate for w in group) * 100
         total_def = sum(w.default_count for w in group)
-        avg_rem = statistics.mean(w.avg_remittance_eur for w in group)
         avg_di = statistics.mean(w.disposable_income for w in group)
         print(
             f"  {arch_name:<18} {len(group):>5}"
-            f" €{avg_w:>8,.2f} {avg_ot:>8.1f}%"
+            f" {avg_w:>9,.2f} {avg_ot:>8.1f}%"
             f" {total_def:>6}"
-            f" €{avg_rem:>6,.0f}"
-            f" €{avg_di:>6,.0f}"
+            f" {avg_di:>7,.0f}"
         )
     states = {"FEAST": 0, "NORMAL": 0, "FAMINE": 0}
     for w in workers:
@@ -578,10 +524,7 @@ def print_report(workers: List[WorkerProfile]) -> None:
     print(f"\n  Income States:  FEAST={states['FEAST']}  NORMAL={states['NORMAL']}  FAMINE={states['FAMINE']}")
     total_repayments = sum(w.repayment_count for w in workers)
     total_defaults = sum(w.default_count for w in workers)
-    avg_ratio = statistics.mean(w.remittance_ratio for w in workers) * 100
     print(f"  Total Repayments: {total_repayments:,}  |  Total Defaults: {total_defaults}")
-    print(f"  Avg Remittance Ratio: {avg_ratio:.1f}% of net income → Turkey")
-    print(f"  Exchange Rate: 1 EUR ≈ {EUR_TO_TRY} TRY")
     print(f"  Total Workers: {len(workers)}\n")
 
 
