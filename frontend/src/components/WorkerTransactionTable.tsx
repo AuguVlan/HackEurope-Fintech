@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { ChevronDown, Search, Filter } from 'lucide-react';
 import { Card, Button, Badge } from './ui';
-// import { formatCurrency, formatDateTime, getStatusBadgeClass } from '../lib/utils';
-// import { cn } from '../lib/cn';
+import { formatCurrency } from '../lib/utils';
 import type { JournalEntry, Posting, Account } from '../hooks/api';
 
 export interface Transaction {
@@ -12,7 +11,6 @@ export interface Transaction {
   from_account?: string;
   to_account?: string;
   amount_minor: number;
-  amount_usd_cents?: number;
   currency: string;
   status: string;
   idempotency_key?: string;
@@ -111,14 +109,12 @@ export const WorkerTransactionTable: React.FC<WorkerTransactionTableProps> = ({
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border/20">
-              <th className="text-left py-3 px-4 font-semibold text-muted-foreground">Timestamp</th>
               <th className="text-left py-3 px-4 font-semibold text-muted-foreground">From Account</th>
               <th className="text-left py-3 px-4 font-semibold text-muted-foreground">To Account</th>
               <th className="text-right py-3 px-4 font-semibold text-muted-foreground">Amount</th>
-              <th className="text-right py-3 px-4 font-semibold text-muted-foreground">USD Exposure</th>
               <th className="text-left py-3 px-4 font-semibold text-muted-foreground">Status</th>
               <th className="text-left py-3 px-4 font-semibold text-muted-foreground">Type</th>
-              <th className="text-left py-3 px-4 font-semibold text-muted-foreground">Idempotency Key</th>
+              <th className="text-left py-3 px-4 font-semibold text-muted-foreground">Reference</th>
             </tr>
           </thead>
           <tbody>
@@ -128,21 +124,19 @@ export const WorkerTransactionTable: React.FC<WorkerTransactionTableProps> = ({
                 onClick={() => onRowClick?.(tx)}
                 className="border-b border-border/20 hover:bg-card/50 transition-colors cursor-pointer"
               >
-                {/* <td className="py-3 px-4 text-muted-foreground">{formatDateTime(tx.timestamp)}</td> */}
                 <td className="py-3 px-4 font-mono text-xs">{tx.from_account || '—'}</td>
                 <td className="py-3 px-4 font-mono text-xs">{tx.to_account || '—'}</td>
-                {/* <td className="py-3 px-4 text-right">{formatCurrency(tx.amount_minor, tx.currency)}</td> */}
-                <td className="py-3 px-4 text-right text-muted-foreground">
-                  {tx.amount_usd_cents ? `$${(tx.amount_usd_cents / 100).toFixed(2)}` : '—'}
+                <td className="py-3 px-4 text-right font-medium">
+                  {formatCurrency(tx.amount_minor, tx.currency)}
                 </td>
                 <td className="py-3 px-4">
                   <Badge variant={tx.status === 'EXECUTED' ? 'success' : tx.status === 'QUEUED' ? 'warning' : 'info'}>
                     {tx.status}
                   </Badge>
                 </td>
-                <td className="py-3 px-4 text-muted-foreground text-xs">{tx.type}</td>
+                <td className="py-3 px-4 text-muted-foreground text-xs capitalize">{tx.type?.replace('_', ' ')}</td>
                 <td className="py-3 px-4 font-mono text-xs text-muted-foreground">
-                  {tx.idempotency_key ? `${tx.idempotency_key.substring(0, 8)}...` : '—'}
+                  {tx.idempotency_key ? `${tx.idempotency_key.substring(0, 12)}...` : '—'}
                 </td>
               </tr>
             ))}
