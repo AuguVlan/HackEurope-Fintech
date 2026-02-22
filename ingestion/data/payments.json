@@ -1,0 +1,334 @@
+{
+  "transactions": [
+    {
+      "transactionId": "tx_001",
+      "bookingDate": "2026-02-21",
+      "creditorName": "Acompt SAS",
+      "debtorAccount": {"iban": "94c4b79c"},
+      "remittanceInformationUnstructured": "Acompt",
+      "transactionAmount": {"amount": "7972.12", "currency": "EUR"},
+      "internalTransactionId": "int_001",
+      "proprietaryBankTransactionCode": "PMNT"
+    },
+    {
+      "transactionId": "tx_002",
+      "bookingDate": "2026-01-21",
+      "creditorName": "Acompt SAS",
+      "debtorAccount": {"iban": "94c4b79c"},
+      "remittanceInformationUnstructured": "Acompt",
+      "transactionAmount": {"amount": "7823.45", "currency": "EUR"},
+      "internalTransactionId": "int_002",
+      "proprietaryBankTransactionCode": "PMNT"
+    },
+    {
+      "transactionId": "tx_003",
+      "bookingDate": "2025-12-21",
+      "creditorName": "Acompt SAS",
+      "debtorAccount": {"iban": "94c4b79c"},
+      "remittanceInformationUnstructured": "Acompt",
+      "transactionAmount": {"amount": "7654.32", "currency": "EUR"},
+      "internalTransactionId": "int_003",
+      "proprietaryBankTransactionCode": "PMNT"
+    },
+    {
+      "transactionId": "tx_004",
+      "bookingDate": "2025-11-21",
+      "creditorName": "Acompt SAS",
+      "debtorAccount": {"iban": "94c4b79c"},
+      "remittanceInformationUnstructured": "Acompt",
+      "transactionAmount": {"amount": "8101.56", "currency": "EUR"},
+      "internalTransactionId": "int_004",
+      "proprietaryBankTransactionCode": "PMNT"
+    },
+    {
+      "transactionId": "tx_005",
+      "bookingDate": "2025-10-21",
+      "creditorName": "Acompt SAS",
+      "debtorAccount": {"iban": "94c4b79c"},
+      "remittanceInformationUnstructured": "Acompt",
+      "transactionAmount": {"amount": "7789.00", "currency": "EUR"},
+      "internalTransactionId": "int_005",
+      "proprietaryBankTransactionCode": "PMNT"
+    },
+    {
+      "transactionId": "tx_006",
+      "bookingDate": "2025-09-21",
+      "creditorName": "Acompt SAS",
+      "debtorAccount": {"iban": "94c4b79c"},
+      "remittanceInformationUnstructured": "Acompt",
+      "transactionAmount": {"amount": "7912.33", "currency": "EUR"},
+      "internalTransactionId": "int_006",
+      "proprietaryBankTransactionCode": "PMNT"
+    },
+    {
+      "transactionId": "tx_007",
+      "bookingDate": "2025-08-21",
+      "creditorName": "Acompt SAS",
+      "debtorAccount": {"iban": "94c4b79c"},
+      "remittanceInformationUnstructured": "Acompt",
+      "transactionAmount": {"amount": "7534.21", "currency": "EUR"},
+      "internalTransactionId": "int_007",
+      "proprietaryBankTransactionCode": "PMNT"
+    },
+    {
+      "transactionId": "tx_008",
+      "bookingDate": "2025-07-21",
+      "creditorName": "Acompt SAS",
+      "debtorAccount": {"iban": "94c4b79c"},
+      "remittanceInformationUnstructured": "Acompt",
+      "transactionAmount": {"amount": "8245.67", "currency": "EUR"},
+      "internalTransactionId": "int_008",
+      "proprietaryBankTransactionCode": "PMNT"
+    },
+    {
+      "transactionId": "tx_009",
+      "bookingDate": "2025-06-21",
+      "creditorName": "Acompt SAS",
+      "debtorAccount": {"iban": "94c4b79c"},
+      "remittanceInformationUnstructured": "Acompt",
+      "transactionAmount": {"amount": "7678.90", "currency": "EUR"},
+      "internalTransactionId": "int_009",
+      "proprietaryBankTransactionCode": "PMNT"
+    },
+    {
+      "transactionId": "tx_010",
+      "bookingDate": "2025-05-21",
+      "creditorName": "Acompt SAS",
+      "debtorAccount": {"iban": "94c4b79c"},
+      "remittanceInformationUnstructured": "Acompt",
+      "transactionAmount": {"amount": "7856.44", "currency": "EUR"},
+      "internalTransactionId": "int_010",
+      "proprietaryBankTransactionCode": "PMNT"
+    },
+    {
+      "transactionId": "tx_011",
+      "bookingDate": "2025-04-21",
+      "creditorName": "Acompt SAS",
+      "debtorAccount": {"iban": "94c4b79c"},
+      "remittanceInformationUnstructured": "Acompt",
+      "transactionAmount": {"amount": "7623.15", "currency": "EUR"},
+      "internalTransactionId": "int_011",
+      "proprietaryBankTransactionCode": "PMNT"
+    },
+    {
+      "transactionId": "tx_012",
+      "bookingDate": "2025-03-21",
+      "creditorName": "Acompt SAS",
+      "debtorAccount": {"iban": "94c4b79c"},
+      "remittanceInformationUnstructured": "Acompt",
+      "transactionAmount": {"amount": "7973.55", "currency": "EUR"},
+      "internalTransactionId": "int_012",
+      "proprietaryBankTransactionCode": "PMNT"
+    },
+    {
+      "transactionId": "tx_013",
+      "bookingDate": "2026-02-21",
+      "creditorName": "Upwork Global Inc.",
+      "debtorAccount": {"iban": "22f8d4bc"},
+      "remittanceInformationUnstructured": "Upwork",
+      "transactionAmount": {"amount": "2388.57", "currency": "EUR"},
+      "internalTransactionId": "int_013",
+      "proprietaryBankTransactionCode": "PMNT"
+    },
+    {
+      "transactionId": "tx_014",
+      "bookingDate": "2026-01-21",
+      "creditorName": "Upwork Global Inc.",
+      "debtorAccount": {"iban": "22f8d4bc"},
+      "remittanceInformationUnstructured": "Upwork",
+      "transactionAmount": {"amount": "2172.50", "currency": "EUR"},
+      "internalTransactionId": "int_014",
+      "proprietaryBankTransactionCode": "PMNT"
+    },
+    {
+      "transactionId": "tx_015",
+      "bookingDate": "2025-12-21",
+      "creditorName": "Upwork Global Inc.",
+      "debtorAccount": {"iban": "22f8d4bc"},
+      "remittanceInformationUnstructured": "Upwork",
+      "transactionAmount": {"amount": "2388.50", "currency": "EUR"},
+      "internalTransactionId": "int_015",
+      "proprietaryBankTransactionCode": "PMNT"
+    },
+    {
+      "transactionId": "tx_016",
+      "bookingDate": "2026-02-21",
+      "creditorName": "Employer SARL",
+      "debtorAccount": {"iban": "c3e4e478"},
+      "remittanceInformationUnstructured": "Salaire",
+      "transactionAmount": {"amount": "733.84", "currency": "EUR"},
+      "internalTransactionId": "int_016",
+      "proprietaryBankTransactionCode": "PMNT"
+    },
+    {
+      "transactionId": "tx_017",
+      "bookingDate": "2026-02-15",
+      "creditorName": "CIBTP",
+      "debtorAccount": {"iban": "c3e4e478"},
+      "remittanceInformationUnstructured": "Cibtp",
+      "transactionAmount": {"amount": "1221.15", "currency": "EUR"},
+      "internalTransactionId": "int_017",
+      "proprietaryBankTransactionCode": "PMNT"
+    },
+    {
+      "transactionId": "tx_018",
+      "bookingDate": "2026-01-21",
+      "creditorName": "Employer SARL",
+      "debtorAccount": {"iban": "c3e4e478"},
+      "remittanceInformationUnstructured": "Salaire",
+      "transactionAmount": {"amount": "772.94", "currency": "EUR"},
+      "internalTransactionId": "int_018",
+      "proprietaryBankTransactionCode": "PMNT"
+    },
+    {
+      "transactionId": "tx_019",
+      "bookingDate": "2026-01-15",
+      "creditorName": "CIBTP",
+      "debtorAccount": {"iban": "c3e4e478"},
+      "remittanceInformationUnstructured": "Cibtp",
+      "transactionAmount": {"amount": "1198.50", "currency": "EUR"},
+      "internalTransactionId": "int_019",
+      "proprietaryBankTransactionCode": "PMNT"
+    },
+    {
+      "transactionId": "tx_020",
+      "bookingDate": "2025-12-21",
+      "creditorName": "Employer SARL",
+      "debtorAccount": {"iban": "c3e4e478"},
+      "remittanceInformationUnstructured": "Salaire",
+      "transactionAmount": {"amount": "745.60", "currency": "EUR"},
+      "internalTransactionId": "int_020",
+      "proprietaryBankTransactionCode": "PMNT"
+    },
+    {
+      "transactionId": "tx_021",
+      "bookingDate": "2025-12-15",
+      "creditorName": "CIBTP",
+      "debtorAccount": {"iban": "c3e4e478"},
+      "remittanceInformationUnstructured": "Cibtp",
+      "transactionAmount": {"amount": "1105.23", "currency": "EUR"},
+      "internalTransactionId": "int_021",
+      "proprietaryBankTransactionCode": "PMNT"
+    },
+    {
+      "transactionId": "tx_022",
+      "bookingDate": "2025-11-21",
+      "creditorName": "Employer SARL",
+      "debtorAccount": {"iban": "c3e4e478"},
+      "remittanceInformationUnstructured": "Salaire",
+      "transactionAmount": {"amount": "812.30", "currency": "EUR"},
+      "internalTransactionId": "int_022",
+      "proprietaryBankTransactionCode": "PMNT"
+    },
+    {
+      "transactionId": "tx_023",
+      "bookingDate": "2025-11-15",
+      "creditorName": "CIBTP",
+      "debtorAccount": {"iban": "c3e4e478"},
+      "remittanceInformationUnstructured": "Cibtp",
+      "transactionAmount": {"amount": "1045.78", "currency": "EUR"},
+      "internalTransactionId": "int_023",
+      "proprietaryBankTransactionCode": "PMNT"
+    },
+    {
+      "transactionId": "tx_024",
+      "bookingDate": "2025-10-21",
+      "creditorName": "Employer SARL",
+      "debtorAccount": {"iban": "c3e4e478"},
+      "remittanceInformationUnstructured": "Salaire",
+      "transactionAmount": {"amount": "690.12", "currency": "EUR"},
+      "internalTransactionId": "int_024",
+      "proprietaryBankTransactionCode": "PMNT"
+    },
+    {
+      "transactionId": "tx_025",
+      "bookingDate": "2025-10-15",
+      "creditorName": "CIBTP",
+      "debtorAccount": {"iban": "c3e4e478"},
+      "remittanceInformationUnstructured": "Cibtp",
+      "transactionAmount": {"amount": "1156.90", "currency": "EUR"},
+      "internalTransactionId": "int_025",
+      "proprietaryBankTransactionCode": "PMNT"
+    },
+    {
+      "transactionId": "tx_026",
+      "bookingDate": "2025-09-21",
+      "creditorName": "Employer SARL",
+      "debtorAccount": {"iban": "c3e4e478"},
+      "remittanceInformationUnstructured": "Salaire",
+      "transactionAmount": {"amount": "756.43", "currency": "EUR"},
+      "internalTransactionId": "int_026",
+      "proprietaryBankTransactionCode": "PMNT"
+    },
+    {
+      "transactionId": "tx_027",
+      "bookingDate": "2025-09-15",
+      "creditorName": "CIBTP",
+      "debtorAccount": {"iban": "c3e4e478"},
+      "remittanceInformationUnstructured": "Cibtp",
+      "transactionAmount": {"amount": "1089.34", "currency": "EUR"},
+      "internalTransactionId": "int_027",
+      "proprietaryBankTransactionCode": "PMNT"
+    },
+    {
+      "transactionId": "tx_028",
+      "bookingDate": "2025-08-21",
+      "creditorName": "Employer SARL",
+      "debtorAccount": {"iban": "c3e4e478"},
+      "remittanceInformationUnstructured": "Salaire",
+      "transactionAmount": {"amount": "801.55", "currency": "EUR"},
+      "internalTransactionId": "int_028",
+      "proprietaryBankTransactionCode": "PMNT"
+    },
+    {
+      "transactionId": "tx_029",
+      "bookingDate": "2025-08-15",
+      "creditorName": "CIBTP",
+      "debtorAccount": {"iban": "c3e4e478"},
+      "remittanceInformationUnstructured": "Cibtp",
+      "transactionAmount": {"amount": "1134.67", "currency": "EUR"},
+      "internalTransactionId": "int_029",
+      "proprietaryBankTransactionCode": "PMNT"
+    },
+    {
+      "transactionId": "tx_030",
+      "bookingDate": "2025-07-21",
+      "creditorName": "Employer SARL",
+      "debtorAccount": {"iban": "c3e4e478"},
+      "remittanceInformationUnstructured": "Salaire",
+      "transactionAmount": {"amount": "723.90", "currency": "EUR"},
+      "internalTransactionId": "int_030",
+      "proprietaryBankTransactionCode": "PMNT"
+    },
+    {
+      "transactionId": "tx_031",
+      "bookingDate": "2025-07-15",
+      "creditorName": "CIBTP",
+      "debtorAccount": {"iban": "c3e4e478"},
+      "remittanceInformationUnstructured": "Cibtp",
+      "transactionAmount": {"amount": "1178.45", "currency": "EUR"},
+      "internalTransactionId": "int_031",
+      "proprietaryBankTransactionCode": "PMNT"
+    },
+    {
+      "transactionId": "tx_032",
+      "bookingDate": "2025-06-21",
+      "creditorName": "Employer SARL",
+      "debtorAccount": {"iban": "c3e4e478"},
+      "remittanceInformationUnstructured": "Salaire",
+      "transactionAmount": {"amount": "768.23", "currency": "EUR"},
+      "internalTransactionId": "int_032",
+      "proprietaryBankTransactionCode": "PMNT"
+    },
+    {
+      "transactionId": "tx_033",
+      "bookingDate": "2025-06-15",
+      "creditorName": "CIBTP",
+      "debtorAccount": {"iban": "c3e4e478"},
+      "remittanceInformationUnstructured": "Cibtp",
+      "transactionAmount": {"amount": "1519.62", "currency": "EUR"},
+      "internalTransactionId": "int_033",
+      "proprietaryBankTransactionCode": "PMNT"
+    }
+  ]
+}
