@@ -243,7 +243,7 @@ export const DashboardContent: React.FC = () => {
               <div className="flex items-center gap-3">
                 <div className="px-4 py-2 rounded-xl bg-card/50 border border-border/50 backdrop-blur-sm">
                   <span className="text-xs text-muted-foreground uppercase tracking-wider">Last Updated</span>
-                  <p className="text-sm font-semibold text-foreground">{new Date().toLocaleTimeString()}</p>
+                  <p className="text-sm font-semibold text-foreground">{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                 </div>
               </div>
             </div>

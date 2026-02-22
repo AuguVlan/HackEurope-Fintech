@@ -58,18 +58,14 @@ const formatEUR = (v: number) =>
 export const CurrencyPools: React.FC = () => {
   const fxHistory = useMemo(() => generateFxHistory(30), []);
   
-  // Get actual pool balances from mockAccounts
-  const accounts = mockAccounts();
-  
-  // Sum all EUR accounts (pool + company + settlement)
-  const eurBalance = accounts
-    .filter(a => a.currency === 'EUR')
-    .reduce((sum, a) => sum + a.balance_minor, 0);
-  
-  // Sum all TRY accounts
-  const tryBalance = accounts
-    .filter(a => a.currency === 'TRY')
-    .reduce((sum, a) => sum + a.balance_minor, 0);
+  // Get actual pool balances from mockAccounts (cached, stable reference)
+  const { eurBalance, tryBalance } = useMemo(() => {
+    const accts = mockAccounts();
+    return {
+      eurBalance: accts.filter(a => a.currency === 'EUR').reduce((sum, a) => sum + a.balance_minor, 0),
+      tryBalance: accts.filter(a => a.currency === 'TRY').reduce((sum, a) => sum + a.balance_minor, 0),
+    };
+  }, []);
 
   const currentRate = fxHistory[fxHistory.length - 1].rate;
   const prevRate = fxHistory[fxHistory.length - 2].rate;

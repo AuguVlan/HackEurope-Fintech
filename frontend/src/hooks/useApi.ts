@@ -122,10 +122,10 @@ export const useIngestionData = () => {
     },
     enabled: BACKEND_ENABLED,
     placeholderData: MOCK_INGESTION,
-    refetchInterval: REFETCH_INTERVAL,
-    staleTime: 10_000,
+    refetchInterval: BACKEND_ENABLED ? REFETCH_INTERVAL : false,
+    staleTime: 30_000,
     retry: 1,
-    retryDelay: 3000,
+    retryDelay: 5000,
   });
 };
 
