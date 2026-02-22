@@ -39,6 +39,13 @@ class ForecastResponse(BaseModel):
     risk_band: str
     fair_lending_disparate_impact_ratio: float
     fair_lending_audit_status: str
+    overdraft_risk_score: float
+    overdraft_risk_band: str
+    max_credit_limit_minor: int
+    overdraft_headroom_minor: int
+    overdraft_limit_utilization: float
+    overdraft_analysis_confidence: float
+    overdraft_analysis_method: str
 
 
 class IncomeSignalResponse(BaseModel):
@@ -59,6 +66,13 @@ class IncomeSignalResponse(BaseModel):
     risk_band: str
     fair_lending_disparate_impact_ratio: float
     fair_lending_audit_status: str
+    overdraft_risk_score: float
+    overdraft_risk_band: str
+    max_credit_limit_minor: int
+    overdraft_headroom_minor: int
+    overdraft_limit_utilization: float
+    overdraft_analysis_confidence: float
+    overdraft_analysis_method: str
     default_state: str
     default_state_confidence: float
     repayment_samples: int

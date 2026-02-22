@@ -17,7 +17,8 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+# Python lib (not frontend/src/lib)
+/lib/
 lib64/
 parts/
 sdist/
@@ -70,4 +71,4 @@ catboost_info/
 
 # Temporary placeholder files
 PASTE_THE_PATH_PRINTED_ABOVE
-frontend/node_modules/*
+frontend/node_modules/*.vite/

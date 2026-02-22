@@ -9,13 +9,16 @@ router = APIRouter(tags=["settlements"])
 
 
 def _map_settlement_row(row) -> SettlementResponse:
+    keys = set(row.keys())
+    from_currency = str(row["from_currency"]) if "from_currency" in keys and row["from_currency"] else None
+    to_currency = str(row["to_currency"]) if "to_currency" in keys and row["to_currency"] else None
     return SettlementResponse(
         id=int(row["id"]),
         period=str(row["period"]),
         from_country=str(row["from_country"]),
         to_country=str(row["to_country"]),
-        from_currency=str(row["from_currency"]) if row.get("from_currency") else None,
-        to_currency=str(row["to_currency"]) if row.get("to_currency") else None,
+        from_currency=from_currency,
+        to_currency=to_currency,
         base_transfer_minor=int(row["base_transfer_minor"]),
         forecast_adjustment_minor=int(row["forecast_adjustment_minor"]),
         recommended_minor=int(row["recommended_minor"]),

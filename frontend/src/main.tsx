@@ -1,4 +1,4 @@
-import './style.css' // 👈 ADD THIS LINE
+import './style.css'
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import Dashboard from './components/Dashboard' 

@@ -83,7 +83,14 @@ Base URL: `http://localhost:8000`
   "p_default": 0.41,
   "risk_band": "medium",
   "fair_lending_disparate_impact_ratio": 0.92,
-  "fair_lending_audit_status": "pass-80-rule"
+  "fair_lending_audit_status": "pass-80-rule",
+  "overdraft_risk_score": 0.47,
+  "overdraft_risk_band": "medium",
+  "max_credit_limit_minor": 2210,
+  "overdraft_headroom_minor": 880,
+  "overdraft_limit_utilization": 0.602,
+  "overdraft_analysis_confidence": 0.74,
+  "overdraft_analysis_method": "overdraft-risk-v1"
 }
 ```
 
@@ -107,7 +114,14 @@ Base URL: `http://localhost:8000`
   "p_default": 0.41,
   "risk_band": "medium",
   "fair_lending_disparate_impact_ratio": 0.92,
-  "fair_lending_audit_status": "pass-80-rule"
+  "fair_lending_audit_status": "pass-80-rule",
+  "overdraft_risk_score": 0.49,
+  "overdraft_risk_band": "medium",
+  "max_credit_limit_minor": 1980,
+  "overdraft_headroom_minor": 650,
+  "overdraft_limit_utilization": 0.672,
+  "overdraft_analysis_confidence": 0.73,
+  "overdraft_analysis_method": "overdraft-risk-v1"
 }
 ```
 

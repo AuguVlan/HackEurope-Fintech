@@ -33,10 +33,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       {/* MATCH YOUR CSS: Use 'sidebar' and 'closed' classes */}
       <aside className={cn('sidebar', !isOpen && 'closed')}>
         <div className="sidebar-brand">
-          <div className="brand-icon">⚡</div>
+          <div className="brand-icon">
+            <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6" stroke="currentColor" strokeWidth="2">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="currentColor" opacity="0.2"/>
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+            </svg>
+          </div>
           <div>
-            <h1 className="brand-title">Ledger</h1>
-            <p className="brand-sub">Synthetic Liquidity</p>
+            <h1 className="brand-title">TideBridge</h1>
+            <p className="brand-sub">Settlement Engine</p>
           </div>
         </div>
 
@@ -58,6 +63,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         </nav>
 
         <div className="sidebar-footer">
+          <div className="px-4 py-3 mb-2 rounded-lg bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Environment</p>
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+              <span className="text-sm font-semibold text-foreground">Production</span>
+            </div>
+          </div>
           <button className="nav-btn nav-btn-danger">
             <LogOut className="w-5 h-5" />
             <span>Sign Out</span>
@@ -78,21 +90,31 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
       <div className="navbar-left">
         <button onClick={onMenuClick} className="menu-toggle">☰</button>
         <div>
-          <h2 className="navbar-title">Admin Dashboard</h2>
-          <p className="navbar-sub">Synthetic Liquidity Settlement</p>
+          <h2 className="navbar-title">Operations Center</h2>
+          <p className="navbar-sub">Real-time Settlement Monitoring</p>
         </div>
       </div>
 
       <div className="navbar-right">
-        <div className="status-pill">
+        <div className="status-pill" style={{ background: 'rgba(34, 197, 94, 0.1)', borderColor: 'rgba(34, 197, 94, 0.3)' }}>
           <span className="pulse" />
-          DEV
+          <span style={{ color: '#22c55e' }}>LIVE</span>
         </div>
         <div className="avatar-block">
-          <div className="avatar" />
+          <div className="avatar" style={{ 
+            background: 'linear-gradient(135deg, #38bdf8, #a855f7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '14px',
+            fontWeight: 600,
+            color: 'white'
+          }}>
+            TB
+          </div>
           <div className="avatar-info">
-            <span className="avatar-name">Admin</span>
-            <span className="avatar-role">System</span>
+            <span className="avatar-name">TideBridge</span>
+            <span className="avatar-role">Admin Console</span>
           </div>
         </div>
       </div>

@@ -117,6 +117,9 @@ def test_forecast_method_switches_with_more_history() -> None:
     assert 0.0 <= body["p_default"] <= 1.0
     assert body["risk_band"] in {"low", "medium", "high"}
     assert 0.0 <= body["fair_lending_disparate_impact_ratio"] <= 1.0
+    assert 0.0 <= body["overdraft_risk_score"] <= 1.0
+    assert body["overdraft_risk_band"] in {"low", "medium", "high", "critical"}
+    assert body["max_credit_limit_minor"] >= 0
 
 
 def test_income_signal_company_endpoint() -> None:
@@ -134,6 +137,9 @@ def test_income_signal_company_endpoint() -> None:
     assert 0.0 <= body["p_default"] <= 1.0
     assert body["default_state"] in {"current", "delinquent", "default", "unknown"}
     assert "repayment_on_time_rate" in body
+    assert 0.0 <= body["overdraft_risk_score"] <= 1.0
+    assert body["overdraft_risk_band"] in {"low", "medium", "high", "critical"}
+    assert body["max_credit_limit_minor"] >= 0
 
 
 def test_ingestion_data_snapshot_contains_frontend_payload() -> None:

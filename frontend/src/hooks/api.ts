@@ -71,6 +71,10 @@ export interface Metrics {
   net_usd_cents_if_settle_now: number;
   queued_count: number;
   transactions_today?: number;
+  lending_capacity_eur_cents?: number;
+  utilization_pct?: number;
+  active_advances?: number;
+  avg_advance_eur_cents?: number;
 }
 
 export interface ForecastSignal {
@@ -90,6 +94,13 @@ export interface ForecastSignal {
   risk_band: 'low' | 'medium' | 'high' | string;
   fair_lending_disparate_impact_ratio: number;
   fair_lending_audit_status: string;
+  overdraft_risk_score: number;
+  overdraft_risk_band: 'low' | 'medium' | 'high' | 'critical' | string;
+  max_credit_limit_minor: number;
+  overdraft_headroom_minor: number;
+  overdraft_limit_utilization: number;
+  overdraft_analysis_confidence: number;
+  overdraft_analysis_method: string;
 }
 
 export interface IncomeSignal extends ForecastSignal {
@@ -127,6 +138,7 @@ export interface SettlementLog {
   rationale: string;
   stripe_transfer_id: string | null;
   created_at: string;
+  source?: 'csv' | 'db' | string;
 }
 
 export interface IngestionRepositoryHealth {
@@ -141,6 +153,18 @@ export interface IngestionWorker {
   succeeded_payments: number;
   catboost_ready: boolean;
   latest_payment_at: string;
+  name?: string;
+  platform?: string;
+  currency?: string;
+  months_active?: number;
+  avg_wage_minor?: number;
+  income_state?: string;
+  repayment_count?: number;
+  on_time_rate?: number;
+  avg_days_late?: number;
+  default_count?: number;
+  disposable_income_minor?: number;
+  source?: 'csv' | 'db' | string;
 }
 
 export interface IngestionPayment {
@@ -155,6 +179,7 @@ export interface IngestionPayment {
   status: string;
   created_at: string;
   timestamp: number;
+  source?: 'csv' | 'db' | string;
 }
 
 export interface IngestionRepayment {
@@ -167,6 +192,7 @@ export interface IngestionRepayment {
   paid_amount_minor: number | null;
   status: string;
   created_at: string;
+  source?: 'csv' | 'db' | string;
 }
 
 export interface IngestionCreditLog {
@@ -182,6 +208,25 @@ export interface IngestionCreditLog {
   confidence: number;
   status: string;
   days_late: number;
+  currency?: string;
+  source?: 'csv' | 'db' | string;
+}
+
+export interface IngestionRemittance {
+  id: number;
+  tx_id: string;
+  worker_id: string;
+  stripe_payment_intent: string;
+  date: string;
+  amount_sent_minor: number;
+  currency_sent: string;
+  amount_received_minor: number;
+  currency_received: string;
+  exchange_rate: number;
+  destination_country: string;
+  status: string;
+  timestamp: number;
+  source?: 'csv' | 'db' | string;
 }
 
 export interface IngestionData {
@@ -192,6 +237,7 @@ export interface IngestionData {
   workers: IngestionWorker[];
   recent_payments: IngestionPayment[];
   recent_repayments: IngestionRepayment[];
+  recent_remittances: IngestionRemittance[];
   credit_log: IngestionCreditLog[];
   settlements: SettlementLog[];
   net_positions: NetPosition[];
@@ -241,7 +287,10 @@ export const api = {
       },
     }),
   getSettlements: () => apiClient.get<SettlementLog[]>('/settlements'),
-  getIngestionData: () => apiClient.get<IngestionData>('/ingestion/data'),
+  getIngestionData: (limit: number = 500) =>
+    apiClient.get<IngestionData>('/ingestion/data', {
+      params: { limit },
+    }),
 
   // Payout
   createPayout: (data: PayoutRequest) => 
