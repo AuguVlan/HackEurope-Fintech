@@ -1,27 +1,64 @@
 import React from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { Card, Stat } from './ui';
-import { formatUSD } from '../lib/utils';
-import { Send, FileText, CheckCircle2, TrendingUp, Clock } from 'lucide-react';
-import type { Metrics } from '../hooks/api';
+import { formatCurrency, formatUSD } from '../lib/utils';
+import { FileText, CheckCircle2, TrendingUp, Clock } from 'lucide-react';
+import type { IngestionCreditLog, Metrics } from '../hooks/api';
 
 interface MetricsPanelProps {
   metrics: Metrics;
+  creditLog?: IngestionCreditLog[];
   isLoading?: boolean;
 }
 
-const COLORS = ['#2ecc71', '#3498db', '#e74c3c', '#f39c12'];
+const EXPOSURE_COLORS = ['#22c55e', '#38bdf8', '#525252'];
+const LOAN_COLORS = ['#34d399', '#f59e0b', '#f43f5e', '#525252'];
 
-export const MetricsPanel: React.FC<MetricsPanelProps> = ({ metrics, isLoading }) => {
-  // Logic remains the same
+export const MetricsPanel: React.FC<MetricsPanelProps> = ({ metrics, creditLog = [], isLoading }) => {
   const compressionRatio = metrics.gross_usd_cents_open > 0
     ? Math.round(((metrics.gross_usd_cents_open - metrics.net_usd_cents_if_settle_now) / metrics.gross_usd_cents_open) * 100)
     : 0;
 
-  const chartData = [
-    { name: 'Compression Saved', value: compressionRatio },
-    { name: 'Net Exposure', value: 100 - compressionRatio },
-  ];
+  const grossExposure = Math.max(metrics.gross_usd_cents_open || 0, 0);
+  const netExposure = Math.max(metrics.net_usd_cents_if_settle_now || 0, 0);
+  const compressedExposure = Math.max(grossExposure - netExposure, 0);
+  const hasExposure = grossExposure > 0 || netExposure > 0;
+
+  const exposureChartData = hasExposure
+    ? [
+        { name: 'Net Exposure', value: netExposure },
+        { name: 'Compressed', value: compressedExposure },
+      ]
+    : [{ name: 'No Exposure', value: 1 }];
+
+  const bucketTotals = creditLog.reduce(
+    (acc, row) => {
+      const amount = Math.max(row.advance_minor || 0, 0);
+      if (amount < 35_000) {
+        acc.small += amount;
+      } else if (amount < 55_000) {
+        acc.medium += amount;
+      } else {
+        acc.large += amount;
+      }
+      return acc;
+    },
+    { small: 0, medium: 0, large: 0 }
+  );
+
+  const totalGrantedExposure = bucketTotals.small + bucketTotals.medium + bucketTotals.large;
+  const hasLoanExposure = totalGrantedExposure > 0;
+  const avgExposurePerLoan = creditLog.length > 0 ? Math.round(totalGrantedExposure / creditLog.length) : 0;
+  const loanExposureData = hasLoanExposure
+    ? [
+        { name: 'Small (<350 EUR)', value: bucketTotals.small },
+        { name: 'Medium (350-550 EUR)', value: bucketTotals.medium },
+        { name: 'Large (>=550 EUR)', value: bucketTotals.large },
+      ].filter((row) => row.value > 0)
+    : [{ name: 'No Loans', value: 1 }];
+
+  const exposureTotal = exposureChartData.reduce((sum, row) => sum + Number(row.value || 0), 0);
+  const loanTotal = loanExposureData.reduce((sum, row) => sum + Number(row.value || 0), 0);
 
   if (isLoading) {
     return (
@@ -54,34 +91,114 @@ export const MetricsPanel: React.FC<MetricsPanelProps> = ({ metrics, isLoading }
           icon={<TrendingUp className="w-4 h-4 text-secondary" />}
         />
 
-        <div>
-          <p className="text-muted-foreground text-sm mb-2">Settlement Compression</p>
-          <div className="flex items-end gap-4">
-            <div className="flex-1">
-              <div className="h-32">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={chartData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={40}
-                      outerRadius={60}
-                      dataKey="value"
-                      startAngle={90}
-                      endAngle={450}
-                      isAnimationActive={false} // Faster rendering for hackathons
-                    >
-                      <Cell fill="#2ecc71" />
-                      <Cell fill="#444" />
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          <div className="rounded-xl border border-border/20 p-3">
+            <p className="text-muted-foreground text-xs mb-2">Exposure Mix</p>
+            <div className="h-40">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={exposureChartData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={38}
+                    outerRadius={60}
+                    dataKey="value"
+                    isAnimationActive={false}
+                  >
+                    {exposureChartData.map((entry, idx) => (
+                      <Cell key={entry.name} fill={EXPOSURE_COLORS[idx % EXPOSURE_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value: number, _name: string, item: any) => {
+                      const numeric = Number(value || 0);
+                      const pct = exposureTotal > 0 ? (numeric / exposureTotal) * 100 : 0;
+                      return [
+                        item?.payload?.name === 'No Exposure'
+                          ? '-'
+                          : `${formatUSD(numeric)} (${pct.toFixed(1)}%)`,
+                        item?.payload?.name || 'Segment',
+                      ];
+                    }}
+                    contentStyle={{
+                      background: 'rgba(10, 10, 10, 0.95)',
+                      border: '1px solid rgba(255,255,255,0.2)',
+                      borderRadius: 10,
+                      color: '#fafafa',
+                    }}
+                    labelStyle={{ color: '#a3a3a3' }}
+                    itemStyle={{ color: '#fafafa' }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
             </div>
-            <div className="text-right">
-              <p className="text-3xl font-bold text-secondary">{compressionRatio}%</p>
-              <p className="text-xs text-muted-foreground">efficiency</p>
+            <div className="space-y-1">
+              {exposureChartData.map((row) => (
+                <div key={row.name} className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">{row.name}</span>
+                  <span className="font-medium">
+                    {row.name === 'No Exposure' ? '-' : formatUSD(row.value)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-border/20 p-3">
+            <p className="text-muted-foreground text-xs mb-2">Exposure per Loan Granted</p>
+            <div className="h-40">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={loanExposureData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={38}
+                    outerRadius={60}
+                    dataKey="value"
+                    isAnimationActive={false}
+                  >
+                    {loanExposureData.map((entry, idx) => (
+                      <Cell key={entry.name} fill={LOAN_COLORS[idx % LOAN_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value: number, _name: string, item: any) => {
+                      const numeric = Number(value || 0);
+                      const pct = loanTotal > 0 ? (numeric / loanTotal) * 100 : 0;
+                      return [
+                        item?.payload?.name === 'No Loans'
+                          ? '-'
+                          : `${formatCurrency(numeric, 'EUR')} (${pct.toFixed(1)}%)`,
+                        item?.payload?.name || 'Segment',
+                      ];
+                    }}
+                    contentStyle={{
+                      background: 'rgba(10, 10, 10, 0.95)',
+                      border: '1px solid rgba(255,255,255,0.2)',
+                      borderRadius: 10,
+                      color: '#fafafa',
+                    }}
+                    labelStyle={{ color: '#a3a3a3' }}
+                    itemStyle={{ color: '#fafafa' }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="space-y-1">
+              {loanExposureData.map((row) => (
+                <div key={row.name} className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">{row.name}</span>
+                  <span className="font-medium">
+                    {row.name === 'No Loans' ? '-' : formatCurrency(row.value, 'EUR')}
+                  </span>
+                </div>
+              ))}
+              <div className="pt-1 mt-1 border-t border-border/20 flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">Avg per loan</span>
+                <span className="font-medium">{formatCurrency(avgExposurePerLoan, 'EUR')}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -91,6 +208,14 @@ export const MetricsPanel: React.FC<MetricsPanelProps> = ({ metrics, isLoading }
             label="Queued Payouts"
             value={metrics.queued_count.toString()} // Stat likely expects a string
             icon={<Clock className="w-4 h-4 text-yellow-400" />}
+          />
+        </div>
+
+        <div className="border-t border-border/20 pt-4">
+          <Stat
+            label="Compression Efficiency"
+            value={`${compressionRatio}%`}
+            icon={<CheckCircle2 className="w-4 h-4 text-secondary" />}
           />
         </div>
 

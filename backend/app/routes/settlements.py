@@ -57,6 +57,12 @@ def create_settlement_run() -> SettlementResponse:
     return _map_settlement_row(row)
 
 
+@router.post("/settle/run", response_model=SettlementResponse, dependencies=[Depends(require_operator)])
+def create_legacy_settlement_run() -> SettlementResponse:
+    # Legacy alias kept for older dashboard pages.
+    return create_settlement_run()
+
+
 @router.post("/settlements/{settlement_id}/execute", response_model=SettlementResponse, dependencies=[Depends(require_operator)])
 def run_settlement_execution(settlement_id: int) -> SettlementResponse:
     with get_db() as conn:

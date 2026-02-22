@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { api, LedgerState, Metrics } from './api';
+import { api } from './api';
 
 const REFETCH_INTERVAL = 5000; // 5 seconds
 
@@ -58,6 +58,18 @@ export const useSettlements = () => {
     queryKey: ['settlements'],
     queryFn: async () => {
       const response = await api.getSettlements();
+      return response.data;
+    },
+    refetchInterval: REFETCH_INTERVAL,
+    staleTime: 2000,
+  });
+};
+
+export const useIngestionData = () => {
+  return useQuery({
+    queryKey: ['ingestionData'],
+    queryFn: async () => {
+      const response = await api.getIngestionData();
       return response.data;
     },
     refetchInterval: REFETCH_INTERVAL,

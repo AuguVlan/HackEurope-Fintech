@@ -134,3 +134,45 @@ def test_income_signal_company_endpoint() -> None:
     assert 0.0 <= body["p_default"] <= 1.0
     assert body["default_state"] in {"current", "delinquent", "default", "unknown"}
     assert "repayment_on_time_rate" in body
+
+
+def test_ingestion_data_snapshot_contains_frontend_payload() -> None:
+    for i in range(3):
+        _create_succeeded_payment(f"idem-ingestion-{i}", 10_000 + i * 500)
+
+    res = client.get("/ingestion/data")
+    assert res.status_code == 200
+    body = res.json()
+
+    assert "generated_at" in body
+    assert "repositories" in body
+    assert "state" in body
+    assert "metrics" in body
+    assert "workers" in body
+    assert "recent_payments" in body
+    assert "credit_log" in body
+    assert "settlements" in body
+    assert isinstance(body["state"]["accounts"], list)
+    assert isinstance(body["state"]["open_obligations"], list)
+    assert isinstance(body["state"]["queued_payouts"], list)
+    assert body["metrics"]["gross_usd_cents_open"] >= 0
+    assert body["metrics"]["queued_count"] >= 0
+    assert isinstance(body["credit_log"], list)
+
+
+def test_state_and_metrics_routes_are_available() -> None:
+    state_res = client.get("/state")
+    metrics_res = client.get("/metrics")
+
+    assert state_res.status_code == 200
+    assert metrics_res.status_code == 200
+
+    state = state_res.json()
+    metrics = metrics_res.json()
+
+    assert "accounts" in state
+    assert "open_obligations" in state
+    assert "queued_payouts" in state
+    assert "gross_usd_cents_open" in metrics
+    assert "net_usd_cents_if_settle_now" in metrics
+    assert "queued_count" in metrics

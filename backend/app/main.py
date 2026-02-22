@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from .config import ROOT_DIR, settings
 # from .database import init_db
-from .routes import forecast, health, payments, pools, settlements, stripe, transaction_retrieval
+from .routes import forecast, health, ingestion, payments, pools, settlements, stripe, transaction_retrieval
 
 app = FastAPI(title=settings.app_name)
 origins = [
@@ -37,6 +37,7 @@ async def serve_dashboard():
     return FileResponse(str(dashboard_file))
 
 app.include_router(health.router)
+app.include_router(ingestion.router)
 app.include_router(payments.router)
 app.include_router(stripe.router)
 app.include_router(pools.router)

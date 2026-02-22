@@ -127,6 +127,74 @@ export interface SettlementLog {
   created_at: string;
 }
 
+export interface IngestionRepositoryHealth {
+  name: string;
+  alive: boolean;
+}
+
+export interface IngestionWorker {
+  worker_id: string;
+  company_id: string;
+  country: string;
+  succeeded_payments: number;
+  catboost_ready: boolean;
+  latest_payment_at: string;
+}
+
+export interface IngestionPayment {
+  id: number;
+  company_id: string;
+  worker_id: string;
+  country: string;
+  amount_minor: number;
+  currency: string;
+  service_type: string;
+  idempotency_key: string;
+  status: string;
+  created_at: string;
+  timestamp: number;
+}
+
+export interface IngestionRepayment {
+  id: number;
+  company_id: string;
+  worker_id: string;
+  due_date: string;
+  due_amount_minor: number;
+  paid_at: string | null;
+  paid_amount_minor: number | null;
+  status: string;
+  created_at: string;
+}
+
+export interface IngestionCreditLog {
+  advance_id: string;
+  worker_id: string;
+  captured_at: string;
+  method: string;
+  p_default: number;
+  risk_band: 'low' | 'medium' | 'high' | string;
+  trigger_state: string;
+  advance_minor: number;
+  auto_repayment_minor: number;
+  confidence: number;
+  status: string;
+  days_late: number;
+}
+
+export interface IngestionData {
+  generated_at: string;
+  repositories: IngestionRepositoryHealth[];
+  state: LedgerState;
+  metrics: Metrics;
+  workers: IngestionWorker[];
+  recent_payments: IngestionPayment[];
+  recent_repayments: IngestionRepayment[];
+  credit_log: IngestionCreditLog[];
+  settlements: SettlementLog[];
+  net_positions: NetPosition[];
+}
+
 export interface PayoutRequest {
   from_pool: string;
   to_pool: string;
@@ -171,6 +239,7 @@ export const api = {
       },
     }),
   getSettlements: () => apiClient.get<SettlementLog[]>('/settlements'),
+  getIngestionData: () => apiClient.get<IngestionData>('/ingestion/data'),
 
   // Payout
   createPayout: (data: PayoutRequest) => 

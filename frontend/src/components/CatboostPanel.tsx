@@ -1,7 +1,7 @@
 import React, { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Brain, Globe2, RefreshCw, UserRound } from 'lucide-react';
 import { Badge, Button, Card, Progress, Skeleton, Stat } from './ui';
-import { useCountryForecast, useSettlements, useWorkerIncomeSignal } from '../hooks/useApi';
+import { useCountryForecast, useIngestionData, useSettlements, useWorkerIncomeSignal } from '../hooks/useApi';
 import { formatCurrency, formatNumber } from '../lib/utils';
 
 type BadgeVariant = 'success' | 'warning' | 'danger' | 'info';
@@ -22,6 +22,13 @@ const methodVariant = (method?: string): BadgeVariant => {
 
 const methodLabel = (method?: string): string => {
   return method === 'catboost-underwriting-v1' ? 'CatBoost Active' : 'Heuristic Fallback';
+};
+
+const methodLogLabel = (method?: string): string => {
+  if (method === 'catboost-underwriting-v1') return 'catboost';
+  if (method === 'heuristic-underwriting-v1') return 'heuristic';
+  if (!method) return 'unknown';
+  return method;
 };
 
 const pdAsPercent = (value?: number): number => {
@@ -67,6 +74,7 @@ export const CatboostPanel: React.FC = () => {
   const countryForecast = useCountryForecast(country);
   const workerSignal = useWorkerIncomeSignal(workerQuery, companyQuery || undefined);
   const settlements = useSettlements();
+  const ingestion = useIngestionData();
 
   const workerNeedsMoreHistory = useMemo(() => {
     if (!workerSignal.data) return false;
@@ -142,6 +150,22 @@ export const CatboostPanel: React.FC = () => {
       return [next, ...prev].slice(0, MAX_LOG_ROWS);
     });
   }, [workerSignal.data]);
+
+  const creditRowsFromIngestion = useMemo(() => {
+    return (ingestion.data?.credit_log || []).slice(0, MAX_LOG_ROWS).map((row) => ({
+      key: `${row.advance_id}|${row.worker_id}|${row.captured_at}`,
+      capturedAt: row.captured_at,
+      method: row.method,
+      pDefault: row.p_default,
+      riskBand: row.risk_band,
+      triggerState: row.trigger_state,
+      advanceMinor: row.advance_minor,
+      autoRepaymentMinor: row.auto_repayment_minor,
+      confidence: row.confidence,
+    }));
+  }, [ingestion.data?.credit_log]);
+
+  const displayedCreditLog = creditRowsFromIngestion.length > 0 ? creditRowsFromIngestion : creditLog;
 
   const fxRows = (settlements.data || []).slice(0, MAX_LOG_ROWS);
 
@@ -365,10 +389,10 @@ export const CatboostPanel: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {creditLog.map((row) => (
+                {displayedCreditLog.map((row) => (
                   <tr key={row.key} className="border-b border-border/10">
                     <td className="py-2 pr-2 whitespace-nowrap">{row.capturedAt}</td>
-                    <td className="py-2 pr-2">{row.method === 'catboost-underwriting-v1' ? 'catboost' : 'heuristic'}</td>
+                    <td className="py-2 pr-2">{methodLogLabel(row.method)}</td>
                     <td className="py-2 pr-2 text-right">{(row.pDefault * 100).toFixed(1)}%</td>
                     <td className="py-2 pr-2 text-right">{formatCurrency(row.advanceMinor, 'EUR')}</td>
                     <td className="py-2 pr-2 text-right">{formatCurrency(row.autoRepaymentMinor, 'EUR')}</td>
@@ -377,7 +401,7 @@ export const CatboostPanel: React.FC = () => {
                     </td>
                   </tr>
                 ))}
-                {creditLog.length === 0 && (
+                {displayedCreditLog.length === 0 && (
                   <tr>
                     <td colSpan={6} className="py-3 text-muted-foreground">
                       No credit logs yet.
