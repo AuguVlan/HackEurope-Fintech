@@ -6,6 +6,7 @@ import {
 import { ArrowRightLeft, Euro, TrendingUp, TrendingDown } from 'lucide-react';
 import { Card, Badge } from './ui';
 import { formatCurrency } from '../lib/utils';
+import { mockAccounts } from '../lib/mockData';
 
 /* ───────────── Simulated data generators ───────────── */
 
@@ -56,7 +57,14 @@ const formatEUR = (v: number) =>
 
 export const CurrencyPools: React.FC = () => {
   const fxHistory = useMemo(() => generateFxHistory(30), []);
-  const { eurBalance, tryBalance } = useMemo(() => generatePoolData(), []);
+  
+  // Get actual pool balances from mockAccounts
+  const accounts = mockAccounts();
+  const eurPool = accounts.find(a => a.id === 'POOL_DE_EUR');
+  const tryPool = accounts.find(a => a.id === 'POOL_TR_TRY');
+  
+  const eurBalance = eurPool?.balance_minor ?? 7_200_000;
+  const tryBalance = tryPool?.balance_minor ?? 72_000_000;
 
   const currentRate = fxHistory[fxHistory.length - 1].rate;
   const prevRate = fxHistory[fxHistory.length - 2].rate;
