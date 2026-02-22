@@ -48,6 +48,18 @@ COUNTRIES = {
 }
 COUNTRY_LIST = list(COUNTRIES.keys())  # ["DE", "TR"]
 
+# FX rate (approximate Feb 2026)
+EUR_TO_TRY = 38.50
+
+# Per-archetype probability of being an FX sender (~50% of each group,
+# but biased towards workers with positive disposable income)
+FX_PARTICIPATION = {
+    "rock_solid":    0.55,   # healthy finances → slightly above half
+    "good_volatile": 0.50,   # decent money, volatile
+    "stretched_thin": 0.40,  # tight budget → fewer
+    "red_flags":     0.35,   # barely surviving → fewest
+}
+
 # German names (for DE workers)
 DE_FIRST_NAMES = [
     "Lukas", "Leon", "Finn", "Jonas", "Felix", "Noah", "Elias", "Paul",
@@ -157,6 +169,22 @@ class AdvanceRepayment:
 
 
 @dataclass
+class FxTransaction:
+    """Cross-border FX transfer (DE↔TR via Stripe)."""
+    tx_id: str
+    stripe_payment_intent: str    # Stripe pi_... reference
+    worker_id: str
+    date: str                     # YYYY-MM-DD
+    amount_sent: float            # in source currency
+    currency_sent: str            # EUR or TRY
+    amount_received: float        # in target currency
+    currency_received: str        # TRY or EUR
+    exchange_rate: float          # EUR→TRY rate used
+    destination_country: str      # TR or DE
+    status: str                   # completed / pending / failed
+
+
+@dataclass
 class WorkerProfile:
     worker_id: str
     name: str
@@ -170,6 +198,7 @@ class WorkerProfile:
     earnings: List[MonthlyEarning] = field(default_factory=list)
     expenses: List[MonthlyExpense] = field(default_factory=list)
     repayments: List[AdvanceRepayment] = field(default_factory=list)
+    fx_transactions: List[FxTransaction] = field(default_factory=list)
     avg_wage: float = 0.0
     income_volatility: float = 0.0
     income_state: str = "NORMAL"
@@ -394,7 +423,90 @@ class WorkerDatasetGenerator:
         reg = datetime.strptime(worker.registration_date, "%Y-%m-%d")
         worker.months_active = max(1, (datetime(2026, 2, 22) - reg).days // 30)
 
+    def _generate_fx_transactions(self, worker: WorkerProfile) -> List[FxTransaction]:
+        """Generate cross-border FX transactions.
+
+        ~50% of each archetype participates (biased by disposable income).
+        DE workers send EUR→TRY, TR workers send TRY→EUR.
+        Workers with more disposable income send larger / more frequent transfers.
+        """
+        # Decide if this worker participates in FX
+        threshold = FX_PARTICIPATION.get(worker.archetype, 0.40)
+        # Boost probability for workers with high disposable income
+        if worker.disposable_income > 500:
+            threshold = min(threshold + 0.15, 0.90)
+        elif worker.disposable_income < 100:
+            threshold = max(threshold - 0.20, 0.05)
+        if self.rng.random() > threshold:
+            return []  # this worker doesn't do FX
+
+        records: List[FxTransaction] = []
+        src_currency = worker.currency
+        if worker.country == "DE":
+            dst_currency, dst_country = "TRY", "TR"
+        else:
+            dst_currency, dst_country = "EUR", "DE"
+
+        # How much they can afford to send per month (5–25% of disposable)
+        send_frac = self.rng.uniform(0.05, 0.25)
+        # Not every month — skip some randomly
+        months_active = [e.month for e in worker.earnings]
+        active_ratio = self.rng.uniform(0.40, 0.85)  # they send 40-85% of months
+
+        for month_str in months_active:
+            if self.rng.random() > active_ratio:
+                continue  # skip this month
+
+            # 1–3 transactions per active month
+            n_tx = self.rng.choices([1, 2, 3], weights=[0.55, 0.30, 0.15])[0]
+            for _ in range(n_tx):
+                self._fx_counter += 1
+                tx_id = f"FX-{self._fx_counter:06d}"
+                # Stripe payment intent ID
+                pi_hex = ''.join(self.rng.choices('0123456789abcdef', k=24))
+                stripe_pi = f"pi_{pi_hex}"
+
+                # Transaction date: random day within the month
+                year, mo = int(month_str[:4]), int(month_str[5:7])
+                day = self.rng.randint(1, 28)
+                tx_date = f"{year}-{mo:02d}-{day:02d}"
+
+                # Amount: fraction of disposable, with noise
+                base_amount = max(10.0, worker.disposable_income * send_frac)
+                amount = round(base_amount * self.rng.uniform(0.6, 1.5), 2)
+
+                # Exchange rate: EUR→TRY ± 5% fluctuation
+                rate = EUR_TO_TRY * self.rng.uniform(0.95, 1.05)
+                rate = round(rate, 4)
+
+                if src_currency == "EUR":
+                    amount_sent = amount
+                    amount_received = round(amount * rate, 2)
+                else:  # TRY → EUR
+                    amount_sent = amount
+                    amount_received = round(amount / rate, 2)
+
+                # Status: 95% completed, 3% pending, 2% failed
+                roll = self.rng.random()
+                if roll < 0.02:
+                    status = "failed"
+                elif roll < 0.05:
+                    status = "pending"
+                else:
+                    status = "completed"
+
+                records.append(FxTransaction(
+                    tx_id=tx_id, stripe_payment_intent=stripe_pi,
+                    worker_id=worker.worker_id, date=tx_date,
+                    amount_sent=amount_sent, currency_sent=src_currency,
+                    amount_received=amount_received, currency_received=dst_currency,
+                    exchange_rate=rate, destination_country=dst_country,
+                    status=status,
+                ))
+        return records
+
     def generate(self) -> List[WorkerProfile]:
+        self._fx_counter = 0
         idx = 0
         for arch_cfg, count in zip(ARCHETYPES, self.archetype_counts):
             for _ in range(count):
@@ -416,6 +528,8 @@ class WorkerDatasetGenerator:
                     repayments=repayments,
                 )
                 self._compute_risk_features(worker)
+                # FX after risk features so we can use disposable_income
+                worker.fx_transactions = self._generate_fx_transactions(worker)
                 self.workers.append(worker)
         return self.workers
 
@@ -436,6 +550,7 @@ class DatasetExporter:
         paths["csv"]        = self._write_flat_csv()
         paths["earnings"]   = self._write_earnings_csv()
         paths["repayments"] = self._write_repayments_csv()
+        paths["fx"]         = self._write_fx_csv()
         paths["expenses"]   = self._write_expenses_csv()
         return paths
 
@@ -457,6 +572,7 @@ class DatasetExporter:
                 "earnings": [asdict(e) for e in w.earnings],
                 "expenses": [asdict(e) for e in w.expenses],
                 "repayments": [asdict(r) for r in w.repayments],
+                "fx_transactions": [asdict(t) for t in w.fx_transactions],
             }
             data.append(d)
         with open(path, "w") as f:
@@ -498,6 +614,22 @@ class DatasetExporter:
             for w in self.workers:
                 for e in w.earnings:
                     writer.writerow(asdict(e))
+        return path
+
+    def _write_fx_csv(self) -> str:
+        """One row per FX transaction → fx_transactions.csv"""
+        path = os.path.join(self.data_dir, "fx_transactions.csv")
+        fields = [
+            "tx_id", "stripe_payment_intent", "worker_id", "date",
+            "amount_sent", "currency_sent", "amount_received", "currency_received",
+            "exchange_rate", "destination_country", "status",
+        ]
+        with open(path, "w", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=fields)
+            writer.writeheader()
+            for w in self.workers:
+                for t in w.fx_transactions:
+                    writer.writerow(asdict(t))
         return path
 
     def _write_repayments_csv(self) -> str:
@@ -557,6 +689,16 @@ def print_report(workers: List[WorkerProfile]) -> None:
     total_repayments = sum(w.repayment_count for w in workers)
     total_defaults = sum(w.default_count for w in workers)
     print(f"  Total Repayments: {total_repayments:,}  |  Total Defaults: {total_defaults}")
+    # FX stats
+    fx_workers = [w for w in workers if w.fx_transactions]
+    total_fx = sum(len(w.fx_transactions) for w in workers)
+    fx_by_arch: Dict[str, int] = {}
+    for w in fx_workers:
+        fx_by_arch[w.archetype] = fx_by_arch.get(w.archetype, 0) + 1
+    print(f"  FX Senders: {len(fx_workers)}/{len(workers)}  |  Total FX Transactions: {total_fx:,}")
+    for arch, cnt in fx_by_arch.items():
+        total_in_arch = sum(1 for w in workers if w.archetype == arch)
+        print(f"    {arch}: {cnt}/{total_in_arch} workers active")
     print(f"  Total Workers: {len(workers)}\n")
 
 
