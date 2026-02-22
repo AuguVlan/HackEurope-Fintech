@@ -1,22 +1,51 @@
 from fastapi import APIRouter, Query, HTTPException
-import requests # We use standard requests instead of httpx
-from ..services.forecast import get_income_signal
+import requests
 import sqlite3
+import datetime
+import json
+from pathlib import Path
+from ..services.forecast import get_income_signal
+# Assuming call_fetch_transactions is defined in main.py to read the file
+
+
 router = APIRouter(tags=["bank"])
 
 # Config
-CLIENT_ID = "3a7ea77b47d0441b811e152ae0e0bff5"
+CLIENT_ID = "9fdf4ab283e6476b8726bd845e534852"
 CLIENT_SECRET = "3a7ea77b47d0441b811e152ae0e0bff5"
-# ENRICHED endpoint to get the "Income" labels
-TINK_URL = "https://api.tink.com/data/v2/transactions"
+def call_fetch_transactions():
+    # 1. Define the path to your specific file
+    file_path = Path("ingestion/data/payments.json")
+    
+    try:
+        # 2. Open and load the local file
+        with open(file_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            
+        # 3. Return the 'transactions' list from that file
+        return data.get("transactions", [])
+        
+    except FileNotFoundError:
+        print(f"Error: The file {file_path} was not found.")
+        return []
+    except json.JSONDecodeError:
+        print(f"Error: Failed to decode JSON from {file_path}.")
+        return []
+    
+@router.get("/get-payments")
+def read_payments():
+    """
+    Directly returns the transactions stored in ingestion/data/payments.json
+    """
+    transactions = call_fetch_transactions()
+    return {"status": "success", "data": transactions}
 
 @router.get("/call_fetch_return_all_transactions")
 def tink_callback(code: str = Query(...)):
     """
-    One single call flow: 
-    1. Exchange Code -> 2. Fetch All Pages -> 3. Return Everything
+    Original Tink callback modified to use local file data for the analysis pipeline.
     """
-    # --- STEP 1: Exchange Code for Token ---
+    # --- STEP 1: Exchange Code for Token (Kept for flow, though data is local now) ---
     token_res = requests.post(
         "https://api.tink.com/api/v1/oauth/token",
         data={
@@ -24,69 +53,49 @@ def tink_callback(code: str = Query(...)):
             "client_id": CLIENT_ID,
             "client_secret": CLIENT_SECRET,
             "grant_type": "authorization_code",
+            "redirect_uri": "http://localhost:8000/user"
         }
     )
     
     if token_res.status_code != 200:
         raise HTTPException(status_code=400, detail="Token Exchange Failed")
     
-    token = token_res.json()["access_token"]
-
-    # --- STEP 2: Fetch Data (Linear Loop) ---
-    all_transactions = []
-    next_token = None
+    # --- STEP 2: Fetch Data from LOCAL FILE instead of Tink URL ---
+    # This uses your existing logic but sources from the JSON file
+    local_transactions = call_fetch_transactions()
     
-    # We use a simple while loop without any async/await
-    while True:
-        params = {"pageSize": 100}
-        if next_token:
-            params["pageToken"] = next_token
+    all_transactions = []
 
-        res = requests.get(
-            TINK_URL,
-            headers={"Authorization": f"Bearer {token}"},
-            params=params
-        )
-        
-        data = res.json()
-        
-        for tx in data.get("transactions", []):
-            # Scale 2 math: 800489 -> 8004.89
-            val = tx["amount"]["value"]
-            amt = int(val["unscaledValue"]) / (10 ** int(val.get("scale", 0)))
-            
-            # Capture the enrichment (Categorization)
-            cat = tx.get("enrichment", {}).get("categorization", {}).get("category", {})
+    for tx in local_transactions:
+        # Mapping local JSON schema (transactionAmount/creditorName) 
+        # to the format expected by run_risk_analysis
+        try:
+            amt_float = float(tx.get("transactionAmount", {}).get("amount", 0))
             
             all_transactions.append({
-                "amount": amt,
-                "category": cat.get("id"), # "income:other"
-                "desc": tx["descriptions"]["display"],
-                "type": tx.get("transactionType"), # CREDIT (Income)
-                "date": tx["dates"]["booked"]
+                "amount": amt_float,
+                "desc": tx.get("creditorName", "No description"),
+                "date": tx.get("bookingDate")
             })
+        except (ValueError, TypeError):
+            continue
 
-        next_token = data.get("nextPageToken")
-        if not next_token:
-            break
-
-    # --- STEP 3: Return the result ---
+    # --- STEP 3: Return result ---
     return {
-        "user": "Connected",
+        "user": "Connected (Local Data Mode)",
         "total_txs": len(all_transactions),
         "data": all_transactions
     }
-    
-def run_risk_analysis(worker_id: str, raw_tink_transactions: list):
+
+def run_risk_analysis(worker_id: str, raw_transactions: list):
     """
-    Bridges the raw Tink JSON to the SQLite-based Risk Engine.
+    Takes standardized transactions and runs the forecast income signal engine.
     """
-    # 1. Initialize In-Memory DB
     conn = sqlite3.connect(":memory:")
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
 
-    # 2. Create Schema expected by risk_engine.py
+    # 1. Schema setup
     cursor.execute("""
         CREATE TABLE payments (
             amount_minor INTEGER, 
@@ -97,7 +106,7 @@ def run_risk_analysis(worker_id: str, raw_tink_transactions: list):
             created_at TEXT
         )
     """)
-    # (Optional) Create repayments table if you have that data
+
     cursor.execute("""
         CREATE TABLE repayments (
             worker_id TEXT, company_id TEXT, due_date TEXT, 
@@ -106,25 +115,30 @@ def run_risk_analysis(worker_id: str, raw_tink_transactions: list):
         )
     """)
 
-    # 3. Map Tink Data to SQLite Rows
-    for tx in raw_tink_transactions:
-        # Use unscaledValue directly for 'minor' units (e.g., 797212)
-        amt_minor = int(tx["amount"]["value"]["unscaledValue"])
+    # 2. Insert data using values from the JSON
+    for i, tx in enumerate(raw_transactions):
+        # Convert float amount to minor units (cents) for the risk engine
+        amt_float = tx.get("amount", 0)
+        amt_minor = int(amt_float * 100)
         
-        # Logic: Since there are no negative values, we identify income by keywords
-        # or by the 'CREDIT' type if Tink provides it.
-        display_name = tx["descriptions"]["display"]
-        is_income = any(word in display_name.lower() for word in ["upwork", "acompt", "salary", "virement"])
+        display_name = tx.get("desc", "Unknown")
+        
+        # Use the date from the JSON if available, otherwise fallback to generated timeline
+        if tx.get("date"):
+            # Ensure format is YYYY-MM-DD HH:MM:SS
+            clean_date = f"{tx.get('date')} 00:00:00"
+        else:
+            past_date = datetime.datetime.now() - datetime.timedelta(days=i*7)
+            clean_date = past_date.strftime('%Y-%m-%d %H:%M:%S')
 
-        if is_income:
+        # Only insert credits (Income) into the payments table for analysis
+        if amt_minor > 0:
             cursor.execute("""
                 INSERT INTO payments (amount_minor, company_id, worker_id, country_id, status, created_at)
                 VALUES (?, ?, ?, 1, 'succeeded', ?)
-            """, (amt_minor, display_name, worker_id, tx["dates"]["booked"]))
+            """, (amt_minor, display_name, worker_id, clean_date))
 
-    # 4. Invoke the Risk Engine
-    # This calls the logic from your first file
-    analysis = get_income_signal(conn, worker_id, period="30d")
-    
+    # 3. Execution
+    analysis = get_income_signal(conn, worker_id, period="365d")
     conn.close()
     return analysis
