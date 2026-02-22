@@ -1,19 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Sidebar, Navbar } from './Layout';
 import { BalanceGrid } from './BalanceCard';
 import { WorkerTransactionTable } from './WorkerTransactionTable';
 import { ObligationsPanel } from './ObligationsPanel';
-import { LiquidityHealthPanel } from './LiquidityHealth';
 import { MetricsPanel } from './MetricsPanel';
 import { ActivityFeed } from './ActivityFeed';
-import { useLedgerState, useMetrics } from '../hooks/useApi';
-import { mockActivityFeed, api } from '../hooks/api';
+import { api } from '../hooks/api';
+import { useIngestionData } from '../hooks/useApi';
 import { Card } from './ui';
+import { CatboostPanel } from './CatboostPanel';
 import type { Transaction } from './WorkerTransactionTable'
 // import { toast } from '../lib/toast';
-import type { Account } from '../hooks/api';
 
+<<<<<<< HEAD
+const PAYMENT_STATUS_TO_TABLE_STATUS: Record<string, string> = {
+  succeeded: 'EXECUTED',
+  requires_confirmation: 'PENDING',
+  processing: 'PENDING',
+  failed: 'FAILED',
+=======
 const MOCK_METRICS = {
   gross_usd_cents_open: 5000000, 
   net_usd_cents_if_settle_now: 1250000, 
@@ -24,11 +30,13 @@ const MOCK_METRICS = {
 const MOCK_LEDGER_STATE = {
   accounts: [
     { currency: 'USD', balance_minor: 2500000, id: 'pool-1' },
-    { currency: 'EUR', balance_minor: 1800000, id: 'pool-2' }
+    { currency: 'EUR', balance_minor: 1800000, id: 'pool-2' },
+    { currency: 'TRY', balance_minor: 42500000, id: 'pool-3' }
   ],
   open_obligations: [
     { id: '1', from_pool: 'POOL_A', to_pool: 'POOL_B', amount_usd_cents: 50000, status: 'open' }
   ]
+>>>>>>> 9d1638336db81f9b7098542b2f101ec8014cfa78
 };
 
 const queryClient = new QueryClient({
@@ -45,12 +53,16 @@ export const DashboardContent: React.FC = () => {
   const [isSettling, setIsSettling] = useState(false);
   // const [transactionDetail, setTransactionDetail] = useState<Transaction | null>(null);
 
-  // const { data: ledgerState, isLoading: stateLoading } = useLedgerState();
-  // const { data: metrics, isLoading: metricsLoading } = useMetrics();
-  const ledgerState = MOCK_LEDGER_STATE;
-  const metrics = MOCK_METRICS;
-  const stateLoading = false; 
-  const metricsLoading = false;
+  const ingestion = useIngestionData();
+  const ledgerState = ingestion.data?.state || { accounts: [], open_obligations: [], queued_payouts: [] };
+  const metrics = ingestion.data?.metrics || {
+    gross_usd_cents_open: 0,
+    net_usd_cents_if_settle_now: 0,
+    queued_count: 0,
+    transactions_today: 0,
+  };
+  const stateLoading = ingestion.isLoading;
+  const metricsLoading = ingestion.isLoading;
   // Group accounts by currency
   const currencyTotals = ledgerState?.accounts.reduce(
     (acc, account) => {
@@ -70,27 +82,64 @@ export const DashboardContent: React.FC = () => {
     [] as Array<{ currency: string; total: number; accounts: number }>
   ) || [];
 
-  // Convert obligations to transaction format
-  const transactions: Transaction[] = (ledgerState?.open_obligations || []).map((o) => ({
-    id: o.id,
-    timestamp: o.created_at || Math.floor(Date.now() / 1000),
-    type: 'obligation',
-    from_account: o.from_pool,
-    to_account: o.to_pool,
-    amount_minor: Math.round((o.amount_usd_cents / 100) * 100), // Approximate
-    amount_usd_cents: o.amount_usd_cents,
-    currency: 'USD',
-    status: o.status,
+  const paymentTransactions: Transaction[] = (ingestion.data?.recent_payments || []).map((payment) => ({
+    id: payment.id,
+    timestamp: payment.timestamp,
+    type: payment.service_type || 'payment',
+    from_account: `COMPANY_${payment.company_id}`,
+    to_account: `POOL_${payment.country}`,
+    amount_minor: payment.amount_minor,
+    amount_usd_cents: payment.amount_minor,
+    currency: payment.currency,
+    status: PAYMENT_STATUS_TO_TABLE_STATUS[payment.status] || String(payment.status).toUpperCase(),
+    idempotency_key: payment.idempotency_key,
   }));
+
+  // Fallback when ingestion payload has no recent payment rows yet.
+  const obligationTransactions: Transaction[] = (ledgerState?.open_obligations || []).map((obligation) => ({
+    id: obligation.id,
+    timestamp: obligation.created_at || Math.floor(Date.now() / 1000),
+    type: 'obligation',
+    from_account: obligation.from_pool,
+    to_account: obligation.to_pool,
+    amount_minor: obligation.amount_usd_cents,
+    amount_usd_cents: obligation.amount_usd_cents,
+    currency: 'USD',
+    status: String(obligation.status).toUpperCase(),
+  }));
+
+  const transactions: Transaction[] = paymentTransactions.length > 0 ? paymentTransactions : obligationTransactions;
+
+  const activities = [
+    ...(ingestion.data?.settlements || []).slice(0, 4).map((row) => ({
+      id: `settlement-${row.id}`,
+      type: 'settlement_batch' as const,
+      timestamp: Math.floor(new Date(row.created_at).getTime() / 1000),
+      data: row,
+      description: `${row.from_country} -> ${row.to_country} ${row.status}`,
+      icon: 'CheckCircle2',
+    })),
+    ...(ingestion.data?.recent_payments || []).slice(0, 4).map((payment) => ({
+      id: `payment-${payment.id}`,
+      type: 'obligation_created' as const,
+      timestamp: payment.timestamp,
+      data: payment,
+      description: `${payment.worker_id} ${payment.status} ${payment.amount_minor / 100} ${payment.currency}`,
+      icon: 'FileText',
+    })),
+  ]
+    .sort((a, b) => b.timestamp - a.timestamp)
+    .slice(0, 8);
 
   const handleSettleClick = async () => {
     setIsSettling(true);
     try {
-      const response = await api.runSettlement({ threshold_usd_cents: 0 });
-      const data = response.data as any;
-      if (data.ok) {
+      const response = await api.runSettlement();
+      const data = response.data as { id?: number };
+      if (typeof data.id === 'number') {
         // toast('Settlement executed successfully', 'success');
         // Auto-refetch after settlement
+        queryClient.invalidateQueries({ queryKey: ['ingestionData'] });
         queryClient.invalidateQueries({ queryKey: ['ledgerState'] });
         queryClient.invalidateQueries({ queryKey: ['metrics'] });
       } else {
@@ -140,26 +189,27 @@ export const DashboardContent: React.FC = () => {
                   isSettling={isSettling}
                 />
 
-                <LiquidityHealthPanel
-                  accounts={ledgerState?.accounts || []}
-                  isLoading={stateLoading}
+                <MetricsPanel
+                  metrics={metrics || {
+                    gross_usd_cents_open: 0,
+                    net_usd_cents_if_settle_now: 0,
+                    queued_count: 0,
+                  }}
+                  creditLog={ingestion.data?.credit_log || []}
+                  isLoading={metricsLoading}
                 />
               </div>
 
               {/* Right Column */}
               <div className="space-y-6">
-                <MetricsPanel metrics={metrics || {
-                  gross_usd_cents_open: 0,
-                  net_usd_cents_if_settle_now: 0,
-                  queued_count: 0,
-                }} isLoading={metricsLoading} />
-
                 <ActivityFeed
-                  activities={mockActivityFeed()}
-                  isLoading={false}
+                  activities={activities}
+                  isLoading={ingestion.isLoading}
                 />
               </div>
             </div>
+
+            <CatboostPanel />
 
             {/* Transaction Table */}
             <WorkerTransactionTable

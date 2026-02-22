@@ -129,3 +129,25 @@ export const formatRelativeTime = (timestamp: number): string => {
   if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
   return new Date(timestamp * 1000).toLocaleDateString();
 };
+
+/**
+ * Calculates balance for a currency based on executed settlements
+ * Sums all transfers FROM a currency (outflows) and TO a currency (inflows)
+ * @param currency - The currency code (e.g., 'USD', 'EUR', 'TRY')
+ * @param settlements - Array of settlement records
+ * @returns Net balance change from transfers
+ */
+export const calculateBalanceFromTransfers = (
+  currency: string,
+  settlements: Array<{ from_currency?: string; to_currency?: string; executed_minor?: number }>
+): number => {
+  return settlements.reduce((total, settlement) => {
+    if (settlement.from_currency === currency && settlement.executed_minor) {
+      return total - settlement.executed_minor; // Outflow
+    }
+    if (settlement.to_currency === currency && settlement.executed_minor) {
+      return total + settlement.executed_minor; // Inflow
+    }
+    return total;
+  }, 0);
+};

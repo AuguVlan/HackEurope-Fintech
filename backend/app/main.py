@@ -16,7 +16,7 @@ import json
 stripe.api_key = "sk_test_51T3HZ5CDt5zQWy94vBAuTaaRSBmWx7E90HayLMoiWH2BJyne5aDMqW47HAv7ttGaIwSCuX2pgUXzvnu2HBG1kJmJ0054lHaA9f" # Your Secret Key
 DATA_PATH = Path("ingestion/data/payments.json")
 # from .database import init_db
-from .routes import forecast, health, payments, pools, settlements, transaction_retrieval
+from .routes import forecast, health, ingestion, payments, pools, settlements, transaction_retrieval
 from fastapi.responses import HTMLResponse
 app = FastAPI(title=settings.app_name)
 origins = [
@@ -123,7 +123,9 @@ async def initiate_payout(request: PayoutRequest):
     # init_db()
 frontend_dist_dir = ROOT_DIR / "frontend" / "dist"
 frontend_assets_dir = frontend_dist_dir / "assets"
-dashboard_file = frontend_dist_dir / "dashboard.html"
+dashboard_file = frontend_dist_dir / "index.html"
+if not dashboard_file.exists():
+    dashboard_file = frontend_dist_dir / "dashboard.html"
 
 if frontend_assets_dir.exists():
     app.mount("/assets", StaticFiles(directory=str(frontend_assets_dir)), name="assets")
@@ -132,6 +134,7 @@ if frontend_assets_dir.exists():
 async def serve_dashboard():
     return FileResponse(str(dashboard_file))
 app.include_router(health.router)
+app.include_router(ingestion.router)
 app.include_router(payments.router)
 app.include_router(pools.router)
 app.include_router(forecast.router)
