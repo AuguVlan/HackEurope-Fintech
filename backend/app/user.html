@@ -6,8 +6,6 @@
     <title>GigCorp | Treasury Management</title>
     
     <script src="https://js.stripe.com/v3"></script>
-    <script src="https://connect-js.stripe.com/v1.0/connect.js"></script>
-    
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
@@ -15,22 +13,19 @@
     <style>
         :root {
             --brand: #6366f1;
-            --expense: #f43f5e;
             --bg: #0f172a;
             --surface: #1e293b;
             --border: #334155;
             --text-dim: #94a3b8;
             --success: #10b981;
+            --stripe-blue: #635bff;
         }
 
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
             background-color: var(--bg);
-            color: white;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
+            color: white; margin: 0; padding: 20px;
+            display: flex; justify-content: center;
         }
 
         .dashboard { width: 100%; max-width: 1000px; margin-top: 40px; }
@@ -38,84 +33,86 @@
         .glass-panel {
             background: var(--surface);
             border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 32px;
+            border-radius: 20px; padding: 32px;
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
             margin-bottom: 24px;
         }
 
-        .header-nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 32px;
-        }
+        .header-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; }
 
         .badge-status {
-            background: rgba(16, 185, 129, 0.1);
-            color: var(--success);
-            padding: 6px 12px;
-            border-radius: 100px;
-            font-size: 12px;
-            font-weight: 700;
-            border: 1px solid var(--success);
+            background: rgba(16, 185, 129, 0.1); color: var(--success);
+            padding: 6px 12px; border-radius: 100px;
+            font-size: 12px; font-weight: 700; border: 1px solid var(--success);
         }
 
         .metrics { display: grid; grid-template-columns: 1fr; margin-bottom: 32px; }
 
         .metric-card {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid var(--border);
-            padding: 24px;
-            border-radius: 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+            padding: 24px; border-radius: 16px;
+            display: flex; justify-content: space-between; align-items: center;
         }
 
-        .label { font-size: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+        .label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; font-weight: 700;}
         .val { font-size: 32px; font-weight: 800; margin-top: 4px; }
 
         .layout { display: grid; grid-template-columns: 1.5fr 1fr; gap: 24px; }
 
         .btn-draw {
-            background: var(--brand);
-            color: white;
-            border: none;
-            padding: 18px;
-            border-radius: 12px;
-            font-weight: 700;
-            font-size: 16px;
-            cursor: pointer;
-            width: 100%;
-            transition: 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
+            background: var(--brand); color: white; border: none;
+            padding: 18px; border-radius: 12px; font-weight: 700;
+            font-size: 16px; cursor: pointer; width: 100%;
+            transition: 0.2s; display: flex; align-items: center;
+            justify-content: center; gap: 10px;
         }
-
-        .btn-draw:hover { background: #4f46e5; transform: scale(1.02); }
-
-        .chart-container { background: rgba(0,0,0,0.2); padding: 20px; border-radius: 16px; height: 250px; }
+        .btn-draw:hover { transform: scale(1.01); filter: brightness(1.1); }
+        .btn-outline { background: transparent; border: 1px solid var(--border); }
 
         .hidden { display: none !important; }
 
-        #stripe-balance-container {
-            min-height: 120px;
-            border-radius: 12px;
-            overflow: hidden;
+        /* Wallet Inputs */
+        .input-box {
+            background: rgba(0,0,0,0.2); border: 1px solid var(--border);
+            border-radius: 12px; padding: 15px; margin: 15px 0;
+        }
+        .input-box input {
+            background: transparent; border: none; color: white;
+            font-size: 24px; font-weight: 700; width: 100%; outline: none;
         }
 
-        #loader { text-align: center; padding: 100px 0; }
-        .spinner {
-            width: 40px; height: 40px; border: 4px solid var(--border);
-            border-top: 4px solid var(--brand); border-radius: 50%;
-            animation: spin 1s linear infinite; margin: 0 auto 20px;
+        /* Terms & Disclosure */
+        .legal-notice {
+            background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border);
+            padding: 12px; border-radius: 10px; font-size: 11px; color: var(--text-dim);
+            margin-bottom: 20px; line-height: 1.4;
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        
+        .legal-link { color: var(--brand); text-decoration: none; font-weight: 600; cursor: pointer; }
+
+        /* Repayment Section */
+        .repayment-card {
+            border-left: 4px solid var(--brand);
+            background: rgba(99, 102, 241, 0.05);
+            padding: 20px; border-radius: 12px; margin-top: 24px;
+        }
+
+        /* Destination UI */
+        .dest-option {
+            display: flex; align-items: center; gap: 12px;
+            padding: 14px; border: 1px solid var(--border);
+            border-radius: 12px; margin-top: 10px;
+        }
+        .dest-option.active { border-color: var(--stripe-blue); background: rgba(99, 91, 255, 0.05); }
+
+        /* Invoice UI */
+        .invoice-card {
+            background: white; color: #0f172a; padding: 25px;
+            border-radius: 12px; text-align: left; font-size: 13px;
+            margin-top: 20px; border-top: 4px solid var(--stripe-blue);
+        }
+
         .spin { animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -124,8 +121,7 @@
         <div id="setup-view" class="glass-panel" style="text-align: center; max-width: 500px; margin: 0 auto;">
             <div style="font-size: 40px; margin-bottom: 20px;">💼</div>
             <h1>GigCorp Treasury</h1>
-            <p style="color: var(--text-dim); line-height: 1.6;">Underwrite how your cash flow can be supported by company money.</p>
-            <button class="btn-draw" style="margin-top: 20px;" onclick="window.location.href='https://link.tink.com/1.0/transactions/connect-accounts?client_id=9fdf4ab283e6476b8726bd845e534852&redirect_uri=http%3A%2F%2Flocalhost%3A8000%2Fuser&market=GB&locale=en_US'">
+            <button class="btn-draw" onclick="window.location.href='https://link.tink.com/1.0/transactions/connect-accounts?client_id=9fdf4ab283e6476b8726bd845e534852&redirect_uri=http%3A%2F%2Flocalhost%3A8000%2Fuser&market=GB&locale=en_US'">
                 Sync Corporate Accounts
             </button>
         </div>
@@ -136,47 +132,66 @@
                     <div style="background: var(--brand); padding: 8px; border-radius: 8px;"><i data-lucide="briefcase"></i></div>
                     <span style="font-weight: 800; font-size: 20px;">GigCorp / Financials</span>
                 </div>
-                <div class="badge-status">API CONNECTED</div>
+                <div class="badge-status">STRIPE LIVE</div>
             </div>
 
-            <div id="loader">
-                <div class="spinner"></div>
-                <p style="color: var(--text-dim);">Running Risk Forecaster...</p>
+            <div id="loader" style="text-align: center; padding: 60px;">
+                <div class="spin" style="width: 30px; height: 30px; border: 3px solid var(--border); border-top-color: var(--brand); border-radius: 50%; margin: 0 auto 20px;"></div>
+                <p style="color: var(--text-dim);">Running Analysis...</p>
             </div>
 
             <div id="content" class="hidden">
-            
-
                 <div class="metrics">
                     <div class="metric-card">
                         <div>
-                            <div class="label">Projected Annual Revenue</div>
-                            <div id="m-income" class="val">$0.00</div>
+                            <div class="label">Stripe Wallet Balance</div>
+                            <div id="wallet-balance" class="val">€0.00</div>
                         </div>
                         <div style="text-align: right">
-                            <div class="label" style="color: var(--success)">Analysis Coverage</div>
-                            <div style="font-weight: 600;">Last 12 Months</div>
+                            <div class="label">Projected Annual</div>
+                            <div id="m-income" style="font-weight: 600; font-size: 18px;">€0.00</div>
                         </div>
                     </div>
                 </div>
 
                 <div class="layout">
-                    <div class="glass-panel">
-                        <h3 style="margin: 0 0 20px; font-size: 16px;">Real-Time Cash Flow</h3>
-                        <div class="chart-container">
-                            <canvas id="gigChart"></canvas>
+                    <div>
+                        <div class="glass-panel">
+                            <h3 style="margin: 0 0 20px; font-size: 14px; color: var(--text-dim);">INCOME PERFORMANCE</h3>
+                            <div style="height: 250px;"><canvas id="gigChart"></canvas></div>
+                        </div>
+
+                        <div id="repayment-panel" class="repayment-card hidden">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                <div>
+                                    <h4 style="margin: 0; color: white;">Micro-credit Repayment</h4>
+                                    <p style="font-size: 12px; color: var(--text-dim); margin: 4px 0 15px;">Automated treasury settlement</p>
+                                </div>
+                                <div style="background: var(--brand); padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 800;">DUE IN 120 DAYS</div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                                <div>
+                                    <div class="label" style="font-size: 10px;">Amount to Return</div>
+                                    <div id="repay-amount" style="font-size: 20px; font-weight: 800; color: white;">€0.00</div>
+                                </div>
+                                <div>
+                                    <div class="label" style="font-size: 10px;">Due Date</div>
+                                    <div id="repay-date" style="font-size: 20px; font-weight: 800; color: white;">-</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
                     <div class="glass-panel" style="background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);">
                         <div class="label">Available Payout</div>
-                        <div id="credit-limit" style="font-size: 42px; font-weight: 800; margin: 10px 0;">$0.00</div>
-                        <p style="font-size: 13px; color: var(--text-dim); line-height: 1.5;">
-                            40% of verified monthly income. Instant dispatch to your Stripe wallet.
-                        </p>
+                        <div id="credit-limit" style="font-size: 42px; font-weight: 800; margin: 10px 0;">€0.00</div>
                         
-                        <button class="btn-draw" style="margin-top: 30px;" onclick="claimFunds()">
-                            <i data-lucide="external-link"></i> Dispatch to Stripe
+                        <button class="btn-draw" style="margin-top: 30px;" onclick="openTopUp()">
+                            <i data-lucide="zap"></i> Top-up (Micro-credit)
+                        </button>
+
+                        <button class="btn-draw btn-outline" style="margin-top: 12px;" onclick="openSend()">
+                            <i data-lucide="send"></i> Send Money
                         </button>
                     </div>
                 </div>
@@ -184,196 +199,197 @@
         </div>
     </div>
 
-    <div id="stripe-modal" class="hidden" style="position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(4px);">
-        <div class="glass-panel" style="width: 400px; text-align: center; border-color: var(--brand);">
-            <div id="stripe-processing">
-                <div style="background: var(--brand); width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
-                    <i data-lucide="refresh-cw" class="spin" style="color: white;"></i>
-                </div>
-                <h2>Initiating Transfer</h2>
-                <div style="width: 100%; background: var(--border); height: 6px; border-radius: 10px; overflow: hidden; margin-top: 20px;">
-                    <div id="stripe-progress" style="width: 0%; height: 100%; background: var(--brand); transition: width 2s;"></div>
-                </div>
+    <div id="modal-topup" class="hidden" style="position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(4px);">
+        <div class="glass-panel" style="width: 400px;">
+            <h3>Authorize Payout</h3>
+            <div class="legal-notice">
+                By clicking confirm, you agree to the <span class="legal-link">Treasury Terms & Conditions</span>. Payouts are based on verified income and subject to a 3% fixed treasury rate.
             </div>
-
-            <div id="stripe-success" class="hidden">
-                <div style="background: var(--success); width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px;">
-                    <i data-lucide="check" style="color: white;"></i>
-                </div>
-                <h2>Funds Dispatched</h2>
-                <p id="final-amount-text" style="color: var(--text-dim); margin-bottom: 20px;"></p>
-                <button class="btn-draw" style="background: transparent; border: 1px solid var(--border);" onclick="closeStripe()">Return to Dashboard</button>
+            <div class="input-box">
+                <div class="label">Amount (EUR)</div>
+                <input type="number" id="topup-amount">
             </div>
+            <button class="btn-draw" onclick="executeTopUp()">Confirm & Authorize</button>
+            <button class="btn-draw btn-outline" style="margin-top: 10px; border:none;" onclick="closeModals()">Cancel</button>
         </div>
     </div>
+
+    <div id="modal-send" class="hidden" style="position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(4px);">
+        <div class="glass-panel" style="width: 420px;">
+            <h3>Transfer Funds</h3>
+            <div class="input-box">
+                <div class="label">Amount (EUR)</div>
+                <input type="number" id="send-amount" value="100" oninput="updateArrival()">
+            </div>
+            <div class="input-box" style="background: rgba(99, 91, 255, 0.05);">
+                <div class="label">Arrival (USD Est.)</div>
+                <input type="text" id="arrival-amount" readonly>
+            </div>
+            <div class="label" style="margin-top: 10px;">Recipient</div>
+            <div class="dest-option active">
+                <i data-lucide="home" style="color: var(--stripe-blue);"></i>
+                <div style="flex: 1;">
+                    <div style="font-weight: 700; font-size: 14px;">Home Account</div>
+                    <div style="font-size: 11px; color: var(--text-dim);">Verified Account •••• 9901</div>
+                </div>
+                <i data-lucide="check-circle" style="color: var(--stripe-blue); width: 16px;"></i>
+            </div>
+            <button class="btn-draw" style="background: var(--stripe-blue); margin-top: 25px;" onclick="executeSend()">Send Now</button>
+            <button class="btn-draw btn-outline" style="margin-top: 10px; border:none;" onclick="closeModals()">Cancel</button>
+        </div>
+    </div>
+
+    <div id="status-overlay" class="hidden" style="position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: flex; align-items: center; justify-content: center; z-index: 2000;">
+        <div style="text-align: center; width: 350px;">
+            <div id="status-spinner" class="spin" style="width: 40px; height: 40px; border: 4px solid var(--border); border-top-color: var(--brand); border-radius: 50%; margin: 0 auto 20px;"></div>
+            <h2 id="status-header">Processing...</h2>
+            
+            <div id="invoice-mock" class="hidden">
+                <div class="invoice-card">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                        <span style="font-weight: 800; color: var(--stripe-blue);">STRIPE INVOICE</span>
+                        <span id="inv-date"></span>
+                    </div>
+                    <div style="border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 10px;">
+                        <div style="color: #64748b; font-size: 10px;">CUSTOMER</div>
+                        <div style="font-weight: 600;">GigCorp Worker</div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <span>Micro-credit Amount</span>
+                        <span id="inv-amt" style="font-weight: 700;"></span>
+                    </div>
+                    <div style="margin-top: 15px; padding-top: 10px; border-top: 2px solid #0f172a; display: flex; justify-content: space-between; font-weight: 800;">
+                        <span>TOTAL PAID</span>
+                        <span id="inv-total" style="color: var(--success);"></span>
+                    </div>
+                </div>
+                <button class="btn-draw" style="margin-top: 20px;" onclick="closeModals()">Back to Dashboard</button>
+            </div>
+            <button id="btn-status-close" class="btn-draw hidden" onclick="closeModals()">Return</button>
+        </div>
+    </div>
+
 <script>
-lucide.createIcons();
-const urlParams = new URLSearchParams(window.location.search);
-const code = urlParams.get('code');
+    lucide.createIcons();
+    const TARGET_ACCOUNT_ID = "acct_1T3SwQFuc3PY7Adn";
+    let walletBalance = 0.00;
 
-// CONFIG: Replace with your actual worker ID for the balance view
-const TARGET_ACCOUNT_ID = "acct_1T3SwQFuc3PY7Adn"; 
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
 
-if (code) {
-    window.history.replaceState({}, document.title, "/user");
-    document.getElementById('setup-view').classList.add('hidden');
-    document.getElementById('dashboard-view').classList.remove('hidden');
-    runAnalysis(code);
-    loadStripeBalance();
-}
-
-async function loadStripeBalance() {
-    if (typeof loadConnectAndInitialize !== 'function') {
-        setTimeout(loadStripeBalance, 500);
-        return;
+    if (code) {
+        window.history.replaceState({}, document.title, "/user");
+        document.getElementById('setup-view').classList.add('hidden');
+        document.getElementById('dashboard-view').classList.remove('hidden');
+        runAnalysis(code);
     }
-    try {
-        const fetchClientSecret = async () => {
-            // Ensure your backend endpoint uses the TARGET_ACCOUNT_ID
-            const response = await fetch('http://localhost:8000/create-account-session', { 
+
+    async function runAnalysis(token) {
+        try {
+            const txRes = await fetch(`http://localhost:8000/call_fetch_return_all_transactions?code=${token}`);
+            const txData = await txRes.json();
+            const riskRes = await fetch('http://localhost:8000/risk/analyze', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ account_id: TARGET_ACCOUNT_ID })
+                body: JSON.stringify({ worker_id: "worker-current", raw_tink_transactions: txData.data })
             });
-            const data = await response.json();
-            return data.client_secret;
-        };
-
-        const stripeConnect = await loadConnectAndInitialize({
-            publishableKey: 'pk_test_51T3HZ5CDt5zQWy94qUCiigYIjxpJFxoVtRs5f4JNj7fODujbXdDqI2mnHt2xFfteEbAZVBWPYqQFQ4wl6qT5aXiT00RVaBsmo0',
-            fetchClientSecret: fetchClientSecret,
-            appearance: {
-                variables: {
-                    colorPrimary: '#6366f1',
-                    colorBackground: '#1e293b',
-                    colorText: '#ffffff',
-                },
-            },
-        });
-
-        // This mounts the OFFICIAL Stripe Wallet UI
-        const balancesComponent = stripeConnect.create("balances");
-        balancesComponent.mount("#stripe-balance-container");
-    } catch (e) { console.error("Stripe Balance UI Error:", e); }
-}
-
-async function runAnalysis(token) {
-    try {
-        const txRes = await fetch(`http://localhost:8000/call_fetch_return_all_transactions?code=${token}`);
-        const txData = await txRes.json();
-        
-        const riskRes = await fetch('http://localhost:8000/risk/analyze', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ worker_id: "worker-current", raw_tink_transactions: txData.data })
-        });
-        const riskData = await riskRes.json();
-        
-        renderDashboard(riskData, txData.data);
-    } catch (e) { console.error("Tink Analysis Error:", e); }
-}
-
-function renderDashboard(riskData, rawTransactions) {
-    document.getElementById('loader').classList.add('hidden');
-    document.getElementById('content').classList.remove('hidden');
-
-    // EXPLICIT ID TARGETING
-    document.getElementById('m-income').innerText = `$${(riskData.avg_monthly_income * 12).toLocaleString()}`;
-    document.getElementById('credit-limit').innerText = `$${riskData.eligible_loan_amount.toFixed(2)}`;
-
-    const ctx = document.getElementById('gigChart').getContext('2d');
-    const sorted = rawTransactions
-        .filter(t => t.amount > 0)
-        .sort((a,b) => new Date(a.date) - new Date(b.date))
-        .slice(-15);
-    
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: sorted.map(t => new Date(t.date).toLocaleDateString()),
-            datasets: [{
-                label: 'Verified Income',
-                data: sorted.map(t => t.amount),
-                borderColor: '#6366f1',
-                backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                fill: true, tension: 0.4
-            }]
-        },
-        options: { maintainAspectRatio: false, plugins: { legend: { display: false } } }
-    });
-}
-
-async function claimFunds() {
-    const loanDisplay = document.getElementById('credit-limit').innerText;
-    const cleanAmount = parseFloat(loanDisplay.replace(/[^0-9.]/g, ''));
-
-    const modal = document.getElementById('stripe-modal');
-    const processing = document.getElementById('stripe-processing');
-    const success = document.getElementById('stripe-success');
-    const progress = document.getElementById('stripe-progress');
-
-    modal.classList.remove('hidden');
-    processing.classList.remove('hidden');
-    success.classList.add('hidden');
-    progress.style.width = '30%';
-
-    try {
-        const response = await fetch('http://localhost:8000/initiate-payout', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                worker_id: TARGET_ACCOUNT_ID, 
-                amount_requested: cleanAmount 
-            })
-        });
-        
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.detail);
-
-        progress.style.width = '100%';
-        
-        setTimeout(() => {
-            processing.classList.add('hidden');
-            success.classList.remove('hidden');
-            
-            // --- UPDATED DIGITAL RECEIPT WITH REAL BALANCE & LEGAL TEXT ---
-            document.getElementById('final-amount-text').innerHTML = `
-                <div style="background: #0f172a; border: 1px dashed var(--border); padding: 20px; border-radius: 12px; margin-top: 15px; text-align: left; position: relative;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                        <span style="font-size: 10px; color: var(--text-dim);">TRANSACTION RECEIPT</span>
-                        <span style="font-size: 10px; color: var(--brand);">GigCorp Treasury</span>
-                    </div>
-                    <div style="border-bottom: 1px solid var(--border); margin-bottom: 10px;"></div>
-                    
-                    <p style="margin: 5px 0; font-size: 14px;"><b>Payout Amount:</b> $${cleanAmount.toFixed(2)}</p>
-                    <p style="margin: 5px 0; font-size: 14px;"><b>Wallet Balance:</b> $${result.new_balance.toLocaleString()}</p>
-                    <p style="margin: 5px 0; font-size: 12px; color: var(--text-dim);"><b>Reference:</b> ${result.transfer_id}</p>
-                    
-                    <div style="border-bottom: 1px solid var(--border); margin-top: 10px; margin-bottom: 10px;"></div>
-                    
-                    <p style="font-size: 11px; color: #fbbf24; line-height: 1.4; font-style: italic;">
-                        "We expect the full payment in 4 months, rates apply."
-                    </p>
-                    
-                    <p style="font-size: 9px; color: var(--text-dim); margin-top: 10px; text-align: center;">
-                        Funds are verified via Tink and settled via Stripe.
-                    </p>
-                </div>
-            `;
-        }, 800);
-    } catch (e) {
-        alert("Payout Failed: " + e.message);
-        modal.classList.add('hidden');
+            const riskData = await riskRes.json();
+            renderDashboard(riskData, txData.data);
+        } catch (e) { console.error(e); }
     }
-}
 
-function closeStripe() {
-    // 👈 Removed location.reload() to prevent "unlogging"
-    document.getElementById('stripe-modal').classList.add('hidden');
+    function renderDashboard(riskData, rawTransactions) {
+        document.getElementById('loader').classList.add('hidden');
+        document.getElementById('content').classList.remove('hidden');
+        document.getElementById('m-income').innerText = `€${(riskData.avg_monthly_income * 12).toLocaleString()}`;
+        document.getElementById('credit-limit').innerText = `€${riskData.eligible_loan_amount.toFixed(2)}`;
+        document.getElementById('topup-amount').value = riskData.eligible_loan_amount.toFixed(0);
+        renderChart(rawTransactions);
+    }
+
+    function openTopUp() { document.getElementById('modal-topup').classList.remove('hidden'); }
+    function openSend() { document.getElementById('modal-send').classList.remove('hidden'); updateArrival(); }
     
-    // This refreshes just the Stripe Balance iframe, not the whole page
-    loadStripeBalance(); 
-}
+    function closeModals() {
+        document.querySelectorAll('.modal-overlay, #modal-topup, #modal-send, #status-overlay').forEach(m => m.classList.add('hidden'));
+        document.getElementById('invoice-mock').classList.add('hidden');
+        document.getElementById('status-spinner').classList.remove('hidden');
+    }
+
+    function updateArrival() {
+        const val = document.getElementById('send-amount').value;
+        document.getElementById('arrival-amount').value = (val * 1.082).toFixed(2);
+    }
+
+    async function executeTopUp() {
+        const amt = parseFloat(document.getElementById('topup-amount').value);
+        document.getElementById('modal-topup').classList.add('hidden');
+        document.getElementById('status-overlay').classList.remove('hidden');
+        document.getElementById('status-header').innerText = "Processing Payout...";
+
+        try {
+            const res = await fetch('http://localhost:8000/initiate-payout', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ worker_id: TARGET_ACCOUNT_ID, amount_requested: amt })
+            });
+            
+            if (res.ok) {
+                walletBalance += amt;
+                document.getElementById('wallet-balance').innerText = `€${walletBalance.toFixed(2)}`;
+                
+                // Set Repayment Info (Amt + 3% interest)
+                const repayAmt = amt * 1.03;
+                const dueDate = new Date();
+                dueDate.setMonth(dueDate.getMonth() + 4);
+                
+                document.getElementById('repay-amount').innerText = `€${repayAmt.toFixed(2)}`;
+                document.getElementById('repay-date').innerText = dueDate.toLocaleDateString();
+                document.getElementById('repayment-panel').classList.remove('hidden');
+
+                // Show Invoice
+                document.getElementById('status-spinner').classList.add('hidden');
+                document.getElementById('status-header').innerText = "Payout Confirmed";
+                document.getElementById('inv-date').innerText = new Date().toLocaleDateString();
+                document.getElementById('inv-amt').innerText = `€${amt.toFixed(2)}`;
+                document.getElementById('inv-total').innerText = `€${amt.toFixed(2)}`;
+                document.getElementById('invoice-mock').classList.remove('hidden');
+            }
+        } catch (e) { closeModals(); }
+    }
+
+    function executeSend() {
+        const amt = parseFloat(document.getElementById('send-amount').value);
+        if (amt > walletBalance) return alert("Insufficient Balance");
+        document.getElementById('modal-send').classList.add('hidden');
+        document.getElementById('status-overlay').classList.remove('hidden');
+        document.getElementById('status-header').innerText = "Transferring to Home Account...";
+
+        setTimeout(() => {
+            walletBalance -= amt;
+            document.getElementById('wallet-balance').innerText = `€${walletBalance.toFixed(2)}`;
+            document.getElementById('status-spinner').classList.add('hidden');
+            document.getElementById('status-header').innerText = "Transfer Dispatched";
+            document.getElementById('btn-status-close').classList.remove('hidden');
+        }, 1500);
+    }
+
+    function renderChart(data) {
+        const ctx = document.getElementById('gigChart').getContext('2d');
+        const sorted = data.filter(t => t.amount > 0).slice(-15);
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: sorted.map(t => new Date(t.date).toLocaleDateString()),
+                datasets: [{
+                    data: sorted.map(t => t.amount),
+                    borderColor: '#6366f1', tension: 0.4, fill: true,
+                    backgroundColor: 'rgba(99, 102, 241, 0.1)'
+                }]
+            },
+            options: { maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        });
+    }
 </script>
 </body>
 </html>
