@@ -76,11 +76,15 @@ class IncomeSignalResponse(BaseModel):
     repayment_risk_adjustment: float
 
 
+
+
 class SettlementResponse(BaseModel):
     id: int
     period: str
     from_country: str
     to_country: str
+    from_currency: str | None = None
+    to_currency: str | None = None
     base_transfer_minor: int
     forecast_adjustment_minor: int
     recommended_minor: int

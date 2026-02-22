@@ -117,6 +117,8 @@ export interface SettlementLog {
   period: string;
   from_country: string;
   to_country: string;
+  from_currency?: string;
+  to_currency?: string;
   base_transfer_minor: number;
   forecast_adjustment_minor: number;
   recommended_minor: number;
