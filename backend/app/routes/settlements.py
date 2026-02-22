@@ -14,6 +14,8 @@ def _map_settlement_row(row) -> SettlementResponse:
         period=str(row["period"]),
         from_country=str(row["from_country"]),
         to_country=str(row["to_country"]),
+        from_currency=str(row["from_currency"]) if row.get("from_currency") else None,
+        to_currency=str(row["to_currency"]) if row.get("to_currency") else None,
         base_transfer_minor=int(row["base_transfer_minor"]),
         forecast_adjustment_minor=int(row["forecast_adjustment_minor"]),
         recommended_minor=int(row["recommended_minor"]),
@@ -30,10 +32,13 @@ def list_settlements() -> list[SettlementResponse]:
     with get_db() as conn:
         rows = conn.execute(
             """
-            SELECT s.*, cf.code AS from_country, ct.code AS to_country
+            SELECT s.*, cf.code AS from_country, ct.code AS to_country, 
+                   pf.currency AS from_currency, pt.currency AS to_currency
             FROM settlements s
             JOIN countries cf ON cf.id = s.from_country_id
             JOIN countries ct ON ct.id = s.to_country_id
+            LEFT JOIN pools pf ON pf.country_id = s.from_country_id
+            LEFT JOIN pools pt ON pt.country_id = s.to_country_id
             ORDER BY s.created_at DESC
             """
         ).fetchall()
@@ -46,10 +51,13 @@ def create_settlement_run() -> SettlementResponse:
         settlement_id = run_settlement(conn)
         row = conn.execute(
             """
-            SELECT s.*, cf.code AS from_country, ct.code AS to_country
+            SELECT s.*, cf.code AS from_country, ct.code AS to_country,
+                   pf.currency AS from_currency, pt.currency AS to_currency
             FROM settlements s
             JOIN countries cf ON cf.id = s.from_country_id
             JOIN countries ct ON ct.id = s.to_country_id
+            LEFT JOIN pools pf ON pf.country_id = s.from_country_id
+            LEFT JOIN pools pt ON pt.country_id = s.to_country_id
             WHERE s.id = ?
             """,
             (settlement_id,),
@@ -67,10 +75,13 @@ def run_settlement_execution(settlement_id: int) -> SettlementResponse:
 
         row = conn.execute(
             """
-            SELECT s.*, cf.code AS from_country, ct.code AS to_country
+            SELECT s.*, cf.code AS from_country, ct.code AS to_country,
+                   pf.currency AS from_currency, pt.currency AS to_currency
             FROM settlements s
             JOIN countries cf ON cf.id = s.from_country_id
             JOIN countries ct ON ct.id = s.to_country_id
+            LEFT JOIN pools pf ON pf.country_id = s.from_country_id
+            LEFT JOIN pools pt ON pt.country_id = s.to_country_id
             WHERE s.id = ?
             """,
             (settlement_id,),

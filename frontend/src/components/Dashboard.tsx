@@ -23,7 +23,8 @@ const MOCK_METRICS = {
 const MOCK_LEDGER_STATE = {
   accounts: [
     { currency: 'USD', balance_minor: 2500000, id: 'pool-1' },
-    { currency: 'EUR', balance_minor: 1800000, id: 'pool-2' }
+    { currency: 'EUR', balance_minor: 1800000, id: 'pool-2' },
+    { currency: 'TRY', balance_minor: 42500000, id: 'pool-3' }
   ],
   open_obligations: [
     { id: '1', from_pool: 'POOL_A', to_pool: 'POOL_B', amount_usd_cents: 50000, status: 'open' }
