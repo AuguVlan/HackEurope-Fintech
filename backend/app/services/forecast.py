@@ -33,7 +33,7 @@ def _moving_average(values: list[int], window: int = 3) -> int:
 def _load_payment_history(conn: sqlite3.Connection, country_id: int) -> list[sqlite3.Row]:
     rows = conn.execute(
         """
-        SELECT amount_minor, company_id, created_at
+        SELECT amount_minor, company_id, worker_id, created_at
         FROM payments
         WHERE country_id = ? AND status = 'succeeded'
         ORDER BY created_at DESC
@@ -361,13 +361,17 @@ def _risk_band(p_default: float) -> str:
     return "low"
 
 
+def _fallback_underwriting(values: list[int], confidence_with_history: float = 0.6) -> tuple[float, str, float]:
+    history = values[-BASELINE_WINDOW:] if values else []
+    current = values[-1] if values else 0
+    p_default = _fallback_probability(history, current)
+    confidence = confidence_with_history if values else 0.45
+    return round(p_default, 4), "heuristic-underwriting-v1", round(confidence, 3)
+
+
 def _pd_from_catboost(values: list[int]) -> tuple[float, str, float]:
     if CatBoostClassifier is None or len(values) < MIN_PD_POINTS:
-        history = values[-BASELINE_WINDOW:] if values else []
-        current = values[-1] if values else 0
-        p_default = _fallback_probability(history, current)
-        confidence = 0.6 if values else 0.45
-        return round(p_default, 4), "heuristic-underwriting-v1", confidence
+        return _fallback_underwriting(values, confidence_with_history=0.6)
 
     train_x: list[list[float]] = []
     train_y: list[int] = []
@@ -379,8 +383,7 @@ def _pd_from_catboost(values: list[int]) -> tuple[float, str, float]:
         train_y.append(_heuristic_default_label(hist, cur))
 
     if len(set(train_y)) < 2:
-        p_default = _fallback_probability(values[-window:], values[-1])
-        return round(p_default, 4), "heuristic-underwriting-v1", 0.65
+        return _fallback_underwriting(values[-window:], confidence_with_history=0.65)
 
     model = CatBoostClassifier(
         iterations=180,
@@ -394,6 +397,44 @@ def _pd_from_catboost(values: list[int]) -> tuple[float, str, float]:
     p_default = float(model.predict_proba([_risk_features(values[-window:], values[-1])])[0][1])
     confidence = min(0.93, 0.65 + len(values) / 150.0)
     return round(p_default, 4), "catboost-underwriting-v1", round(confidence, 3)
+
+
+def _country_pd_from_workers(payment_rows: list[sqlite3.Row]) -> tuple[float, str, float]:
+    worker_histories: dict[str, list[int]] = {}
+    for row in payment_rows:
+        worker_id = row["worker_id"]
+        if not worker_id:
+            continue
+        worker_histories.setdefault(str(worker_id), []).append(int(row["amount_minor"]))
+
+    if not worker_histories:
+        inflows = [int(r["amount_minor"]) for r in payment_rows]
+        return _fallback_underwriting(inflows, confidence_with_history=0.55)
+
+    weighted_pd = 0.0
+    weighted_confidence = 0.0
+    total_weight = 0
+    any_catboost = False
+
+    for values in worker_histories.values():
+        if len(values) >= MIN_PD_POINTS:
+            p_default, method, confidence = _pd_from_catboost(values)
+        else:
+            p_default, method, confidence = _fallback_underwriting(values, confidence_with_history=0.55)
+        weight = len(values)
+        weighted_pd += p_default * weight
+        weighted_confidence += confidence * weight
+        total_weight += weight
+        if method == "catboost-underwriting-v1":
+            any_catboost = True
+
+    if total_weight == 0:
+        return _fallback_underwriting([], confidence_with_history=0.55)
+
+    p_default = round(weighted_pd / total_weight, 4)
+    confidence = round(weighted_confidence / total_weight, 3)
+    method = "catboost-underwriting-v1" if any_catboost else "heuristic-underwriting-v1"
+    return p_default, method, confidence
 
 
 class FairLendingAuditor:
@@ -431,13 +472,18 @@ def _fair_lending_audit(payment_rows: list[sqlite3.Row], p_default: float) -> tu
     return ratio, status
 
 
-def _build_income_signal(payload: dict[str, str | None], payment_rows: list[sqlite3.Row], period: str) -> dict:
+def _build_income_signal(
+    payload: dict[str, str | None],
+    payment_rows: list[sqlite3.Row],
+    period: str,
+    underwriting: tuple[float, str, float] | None = None,
+) -> dict:
     inflows = [int(r["amount_minor"]) for r in payment_rows]
 
     baseline, current, _delta, trigger, advance_minor, repayment_minor = _income_profile(inflows)
     expected_inflow = baseline if baseline > 0 else _moving_average(inflows)
     expected_outflow = repayment_minor
-    p_default, method, model_confidence = _pd_from_catboost(inflows)
+    p_default, method, model_confidence = underwriting or _pd_from_catboost(inflows)
     fair_ratio, fair_status = _fair_lending_audit(payment_rows, p_default)
 
     net_minor = expected_inflow - expected_outflow
@@ -468,7 +514,8 @@ def _build_income_signal(payload: dict[str, str | None], payment_rows: list[sqli
 def get_forecast(conn: sqlite3.Connection, country_code: str, period: str) -> dict:
     country_id = get_country_id(conn, country_code)
     payment_rows = _load_payment_history(conn, country_id)
-    return _build_income_signal({"country": country_code}, payment_rows, period)
+    underwriting = _country_pd_from_workers(payment_rows)
+    return _build_income_signal({"country": country_code}, payment_rows, period, underwriting=underwriting)
 
 
 def get_income_signal(

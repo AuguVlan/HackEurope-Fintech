@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 
 from app.database import get_db, reset_demo_data
 from app.repository import get_country_id
+from app.services import forecast as forecast_service
 from app.services.forecast import get_forecast, get_income_signal
 
 
@@ -92,6 +93,28 @@ def test_underwriting_outputs_are_bounded() -> None:
     assert 0.0 <= result["p_default"] <= 1.0
     assert result["risk_band"] in {"low", "medium", "high"}
     assert 0.0 <= result["fair_lending_disparate_impact_ratio"] <= 1.0
+
+
+def test_country_underwriting_is_worker_level_with_min_12(monkeypatch) -> None:
+    _seed_payment_history(
+        "COUNTRY_A",
+        [10000, 9800, 10200, 9600, 10400, 9400, 10600, 9200, 10800, 9000, 11000, 8800],
+    )
+
+    calls: list[int] = []
+    real_pd_from_catboost = forecast_service._pd_from_catboost
+
+    def spy_pd(values: list[int]) -> tuple[float, str, float]:
+        calls.append(len(values))
+        return real_pd_from_catboost(values)
+
+    monkeypatch.setattr(forecast_service, "_pd_from_catboost", spy_pd)
+
+    with get_db() as conn:
+        result = get_forecast(conn, "COUNTRY_A", "2026-02-P2")
+
+    assert all(size < forecast_service.MIN_PD_POINTS for size in calls)
+    assert result["method"] == "heuristic-underwriting-v1"
 
 
 def test_company_income_signal_endpoint_logic() -> None:
