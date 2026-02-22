@@ -6,6 +6,7 @@ import {
 import { ArrowRightLeft, Euro, TrendingUp, TrendingDown } from 'lucide-react';
 import { Card, Badge } from './ui';
 import { formatCurrency } from '../lib/utils';
+import { mockAccounts } from '../lib/mockData';
 
 /* ───────────── Simulated data generators ───────────── */
 
@@ -56,7 +57,19 @@ const formatEUR = (v: number) =>
 
 export const CurrencyPools: React.FC = () => {
   const fxHistory = useMemo(() => generateFxHistory(30), []);
-  const { eurBalance, tryBalance } = useMemo(() => generatePoolData(), []);
+  
+  // Get actual pool balances from mockAccounts
+  const accounts = mockAccounts();
+  
+  // Sum all EUR accounts (pool + company + settlement)
+  const eurBalance = accounts
+    .filter(a => a.currency === 'EUR')
+    .reduce((sum, a) => sum + a.balance_minor, 0);
+  
+  // Sum all TRY accounts
+  const tryBalance = accounts
+    .filter(a => a.currency === 'TRY')
+    .reduce((sum, a) => sum + a.balance_minor, 0);
 
   const currentRate = fxHistory[fxHistory.length - 1].rate;
   const prevRate = fxHistory[fxHistory.length - 2].rate;
@@ -80,7 +93,7 @@ export const CurrencyPools: React.FC = () => {
     <div className="space-y-6">
       {/* ── Two Pool Cards ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* EUR Pool */}
+        {/* EUR Balance */}
         <Card className="relative overflow-hidden group">
           <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full opacity-10 blur-2xl"
                style={{ background: COLORS.eur }} />
@@ -90,19 +103,19 @@ export const CurrencyPools: React.FC = () => {
               €
             </div>
             <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">EUR Pool</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">EUR Balance</p>
               <p className="text-2xl font-bold tracking-tight" style={{ color: COLORS.eur }}>
                 {formatEUR(eurBalance)}
               </p>
             </div>
           </div>
           <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>{Math.floor(eurBalance / 100).toLocaleString()} EUR available</span>
-            <Badge variant="info">{eurPct}% of total</Badge>
+            <span>{Math.floor(eurBalance / 100).toLocaleString()} EUR total</span>
+            <Badge variant="info">{eurPct}% of portfolio</Badge>
           </div>
         </Card>
 
-        {/* TRY Pool */}
+        {/* TRY Balance */}
         <Card className="relative overflow-hidden group">
           <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full opacity-10 blur-2xl"
                style={{ background: COLORS.try }} />
@@ -112,7 +125,7 @@ export const CurrencyPools: React.FC = () => {
               ₺
             </div>
             <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">TRY Pool</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">TRY Balance</p>
               <p className="text-2xl font-bold tracking-tight" style={{ color: COLORS.try }}>
                 {formatTRY(tryBalance)}
               </p>
@@ -120,7 +133,7 @@ export const CurrencyPools: React.FC = () => {
           </div>
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>≈ {formatEUR(tryInEur)} equivalent</span>
-            <Badge variant="warning">{tryPct}% of total</Badge>
+            <Badge variant="warning">{tryPct}% of portfolio</Badge>
           </div>
         </Card>
       </div>

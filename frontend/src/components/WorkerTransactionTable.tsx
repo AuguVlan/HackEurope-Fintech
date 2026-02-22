@@ -1,7 +1,12 @@
 import React, { useState } from 'react';
 import { ChevronDown, Search, Filter } from 'lucide-react';
 import { Card, Button, Badge } from './ui';
+<<<<<<< HEAD
 import type { Account } from '../hooks/api';
+=======
+import { formatCurrency } from '../lib/utils';
+import type { JournalEntry, Posting, Account } from '../hooks/api';
+>>>>>>> 3ebba738c79d5ccb4ac1d055cd3ef7b2f555a6ad
 
 export interface Transaction {
   id: number;
@@ -10,7 +15,6 @@ export interface Transaction {
   from_account?: string;
   to_account?: string;
   amount_minor: number;
-  amount_usd_cents?: number;
   currency: string;
   status: string;
   idempotency_key?: string;
@@ -119,15 +123,17 @@ export const WorkerTransactionTable: React.FC<WorkerTransactionTableProps> = ({
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border/20">
-              <th className="text-left py-3 px-4 font-semibold text-muted-foreground">Timestamp</th>
               <th className="text-left py-3 px-4 font-semibold text-muted-foreground">From Account</th>
               <th className="text-left py-3 px-4 font-semibold text-muted-foreground">To Account</th>
               <th className="text-right py-3 px-4 font-semibold text-muted-foreground">Amount</th>
-              <th className="text-right py-3 px-4 font-semibold text-muted-foreground">USD Exposure</th>
               <th className="text-left py-3 px-4 font-semibold text-muted-foreground">Status</th>
               <th className="text-left py-3 px-4 font-semibold text-muted-foreground">Type</th>
+<<<<<<< HEAD
               <th className="text-left py-3 px-4 font-semibold text-muted-foreground">Idempotency Key</th>
               <th className="text-left py-3 px-4 font-semibold text-muted-foreground">Source</th>
+=======
+              <th className="text-left py-3 px-4 font-semibold text-muted-foreground">Reference</th>
+>>>>>>> 3ebba738c79d5ccb4ac1d055cd3ef7b2f555a6ad
             </tr>
           </thead>
           <tbody>
@@ -137,26 +143,37 @@ export const WorkerTransactionTable: React.FC<WorkerTransactionTableProps> = ({
                 onClick={() => onRowClick?.(tx)}
                 className="border-b border-border/20 hover:bg-card/50 transition-colors cursor-pointer"
               >
+<<<<<<< HEAD
                 <td className="py-3 px-4 text-xs text-muted-foreground">{fmtTimestamp(tx.timestamp)}</td>
                 <td className="py-3 px-4 font-mono text-xs">{tx.from_account || '-'}</td>
                 <td className="py-3 px-4 font-mono text-xs">{tx.to_account || '-'}</td>
                 <td className="py-3 px-4 text-right">{fmtAmount(tx.amount_minor, tx.currency)}</td>
                 <td className="py-3 px-4 text-right text-muted-foreground">
                   {tx.amount_usd_cents ? `$${(tx.amount_usd_cents / 100).toFixed(2)}` : '-'}
+=======
+                <td className="py-3 px-4 font-mono text-xs">{tx.from_account || '—'}</td>
+                <td className="py-3 px-4 font-mono text-xs">{tx.to_account || '—'}</td>
+                <td className="py-3 px-4 text-right font-medium">
+                  {formatCurrency(tx.amount_minor, tx.currency)}
+>>>>>>> 3ebba738c79d5ccb4ac1d055cd3ef7b2f555a6ad
                 </td>
                 <td className="py-3 px-4">
                   <Badge variant={tx.status === 'EXECUTED' ? 'success' : tx.status === 'QUEUED' ? 'warning' : 'info'}>
                     {tx.status}
                   </Badge>
                 </td>
-                <td className="py-3 px-4 text-muted-foreground text-xs">{tx.type}</td>
+                <td className="py-3 px-4 text-muted-foreground text-xs capitalize">{tx.type?.replace('_', ' ')}</td>
                 <td className="py-3 px-4 font-mono text-xs text-muted-foreground">
+<<<<<<< HEAD
                   {tx.idempotency_key ? `${tx.idempotency_key.substring(0, 8)}...` : '-'}
                 </td>
                 <td className="py-3 px-4 text-xs">
                   <Badge variant={tx.source === 'db' ? 'info' : 'success'}>
                     {(tx.source || 'unknown').toUpperCase()}
                   </Badge>
+=======
+                  {tx.idempotency_key ? `${tx.idempotency_key.substring(0, 12)}...` : '—'}
+>>>>>>> 3ebba738c79d5ccb4ac1d055cd3ef7b2f555a6ad
                 </td>
               </tr>
             ))}

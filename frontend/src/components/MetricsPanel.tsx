@@ -1,8 +1,8 @@
 import React from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { Card, Stat } from './ui';
-import { formatCurrency, formatUSD } from '../lib/utils';
-import { FileText, CheckCircle2, TrendingUp, Clock } from 'lucide-react';
+import { formatCurrency } from '../lib/utils';
+import { FileText, CheckCircle2, TrendingUp, Clock, Activity, Shield } from 'lucide-react';
 import type { IngestionCreditLog, Metrics } from '../hooks/api';
 
 interface MetricsPanelProps {
@@ -13,6 +13,9 @@ interface MetricsPanelProps {
 
 const EXPOSURE_COLORS = ['#22c55e', '#38bdf8', '#525252'];
 const LOAN_COLORS = ['#22c55e', '#f59e0b', '#f43f5e', '#525252']; // low=green, medium=amber, high=red, unknown=gray
+
+// Format EUR from minor units (cents)
+const formatEUR = (cents: number) => formatCurrency(cents, 'EUR');
 
 export const MetricsPanel: React.FC<MetricsPanelProps> = ({ metrics, creditLog = [], isLoading }) => {
   const compressionRatio = metrics.gross_usd_cents_open > 0
@@ -87,13 +90,13 @@ export const MetricsPanel: React.FC<MetricsPanelProps> = ({ metrics, creditLog =
       <div className="space-y-6">
         <Stat
           label="Gross Exposure"
-          value={formatUSD(metrics.gross_usd_cents_open)}
+          value={formatEUR(metrics.gross_usd_cents_open)}
           icon={<FileText className="w-4 h-4 text-primary" />}
         />
 
         <Stat
           label="Net Exposure"
-          value={formatUSD(metrics.net_usd_cents_if_settle_now)}
+          value={formatEUR(metrics.net_usd_cents_if_settle_now)}
           icon={<TrendingUp className="w-4 h-4 text-secondary" />}
         />
 
@@ -123,7 +126,7 @@ export const MetricsPanel: React.FC<MetricsPanelProps> = ({ metrics, creditLog =
                       return [
                         item?.payload?.name === 'No Exposure'
                           ? '-'
-                          : `${formatUSD(numeric)} (${pct.toFixed(1)}%)`,
+                          : `${formatEUR(numeric)} (${pct.toFixed(1)}%)`,
                         item?.payload?.name || 'Segment',
                       ];
                     }}
@@ -144,7 +147,7 @@ export const MetricsPanel: React.FC<MetricsPanelProps> = ({ metrics, creditLog =
                 <div key={row.name} className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">{row.name}</span>
                   <span className="font-medium">
-                    {row.name === 'No Exposure' ? '-' : formatUSD(row.value)}
+                    {row.name === 'No Exposure' ? '-' : formatEUR(row.value)}
                   </span>
                 </div>
               ))}

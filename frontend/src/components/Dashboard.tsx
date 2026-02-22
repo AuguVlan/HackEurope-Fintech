@@ -91,7 +91,6 @@ export const DashboardContent: React.FC = () => {
     from_account: `COMPANY_${payment.company_id}`,
     to_account: `POOL_${payment.country}`,
     amount_minor: payment.amount_minor,
-    amount_usd_cents: payment.amount_minor,
     currency: payment.currency,
     status: PAYMENT_STATUS_TO_TABLE_STATUS[payment.status] || String(payment.status).toUpperCase(),
     idempotency_key: payment.idempotency_key,
@@ -105,8 +104,7 @@ export const DashboardContent: React.FC = () => {
     from_account: obligation.from_pool,
     to_account: obligation.to_pool,
     amount_minor: obligation.amount_usd_cents,
-    amount_usd_cents: obligation.amount_usd_cents,
-    currency: 'USD',
+    currency: obligation.from_pool?.includes('EUR') ? 'EUR' : obligation.from_pool?.includes('TRY') ? 'TRY' : 'EUR',
     status: String(obligation.status).toUpperCase(),
     source: 'db',
   }));
@@ -220,6 +218,7 @@ export const DashboardContent: React.FC = () => {
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex-1 flex flex-col lg:ml-64">
         <Navbar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
+<<<<<<< HEAD
         <main className="flex-1 overflow-auto">
           <div className="p-6 max-w-7xl mx-auto space-y-8">
             <div>
@@ -230,6 +229,35 @@ export const DashboardContent: React.FC = () => {
             <CurrencyPools />
             <BalanceGrid data={currencyTotals} isLoading={stateLoading} />
 
+=======
+
+        {/* Page Content */}
+        <main className="flex-1 overflow-auto bg-gradient-to-br from-background via-background to-background/95">
+          <div className="p-6 lg:p-8 max-w-7xl mx-auto space-y-8">
+            {/* Professional Header */}
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-2 h-8 rounded-full bg-gradient-to-b from-primary to-accent" />
+                  <h1 className="text-3xl font-bold text-foreground tracking-tight">Ledger Dashboard</h1>
+                </div>
+                <p className="text-muted-foreground ml-5">
+                  Real-time view of TideBridge settlement across all pools
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="px-4 py-2 rounded-xl bg-card/50 border border-border/50 backdrop-blur-sm">
+                  <span className="text-xs text-muted-foreground uppercase tracking-wider">Last Updated</span>
+                  <p className="text-sm font-semibold text-foreground">{new Date().toLocaleTimeString()}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Currency Pools with FX Overview */}
+            <CurrencyPools />
+
+            {/* Main Grid */}
+>>>>>>> 3ebba738c79d5ccb4ac1d055cd3ef7b2f555a6ad
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2 space-y-6">
                 <MetricsPanel
