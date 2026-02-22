@@ -71,6 +71,10 @@ export interface Metrics {
   net_usd_cents_if_settle_now: number;
   queued_count: number;
   transactions_today?: number;
+  lending_capacity_eur_cents?: number;
+  utilization_pct?: number;
+  active_advances?: number;
+  avg_advance_eur_cents?: number;
 }
 
 export interface ForecastSignal {

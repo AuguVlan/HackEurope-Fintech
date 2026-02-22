@@ -119,15 +119,39 @@ export function mockMetrics(): Metrics {
   const compressionRatio = 0.74;
   const netExposureEur = grossExposureEur * (1 - compressionRatio);
   
-  // Convert to USD cents for compatibility (use FX_RATE as proxy)
-  const grossUsdCents = Math.round(grossExposureEur * 100 * 100); // EUR to cents, then *100 for multiplier
-  const netUsdCents = Math.round(netExposureEur * 100 * 100);
+  // Convert to EUR cents for display
+  const grossEurCents = Math.round(grossExposureEur * 100);
+  const netEurCents = Math.round(netExposureEur * 100);
+  
+  // Calculate lending capacity from pool balances
+  const accounts = mockAccounts();
+  const eurPool = accounts.find(a => a.id === 'POOL_DE_EUR');
+  const tryPool = accounts.find(a => a.id === 'POOL_TR_TRY');
+  
+  const eurAvailable = (eurPool?.balance_minor || 0) - (eurPool?.min_buffer_minor || 0);
+  const tryAvailableInEur = ((tryPool?.balance_minor || 0) - (tryPool?.min_buffer_minor || 0)) / FX_RATE;
+  const lendingCapacityEur = Math.max(0, Math.round(eurAvailable + tryAvailableInEur));
+  
+  // Utilization = how much of capacity is currently deployed
+  const utilizationPct = lendingCapacityEur > 0 
+    ? Math.min(100, Math.round((grossEurCents / lendingCapacityEur) * 100))
+    : 0;
+  
+  // Active advances count and average
+  const activeAdvances = log.filter(l => l.status === 'active').length;
+  const avgAdvanceEur = activeAdvances > 0 
+    ? Math.round(grossEurCents / activeAdvances)
+    : 0;
   
   return {
-    gross_usd_cents_open: grossUsdCents,
-    net_usd_cents_if_settle_now: netUsdCents,
+    gross_usd_cents_open: grossEurCents,
+    net_usd_cents_if_settle_now: netEurCents,
     queued_count: between(5, 20),
     transactions_today: between(50, 150),
+    lending_capacity_eur_cents: lendingCapacityEur,
+    utilization_pct: utilizationPct,
+    active_advances: activeAdvances,
+    avg_advance_eur_cents: avgAdvanceEur,
   };
 }
 
