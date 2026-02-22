@@ -2,7 +2,7 @@ import React from 'react';
 import { Card } from './ui';
 import { formatTime } from '../lib/utils';
 import { Send, FileText, CheckCircle2, TrendingUp, Clock } from 'lucide-react';
-import type { ActivityItem } from '../api';
+import type { ActivityItem } from '../hooks/api';
 
 interface ActivityFeedProps {
   activities: ActivityItem[];
