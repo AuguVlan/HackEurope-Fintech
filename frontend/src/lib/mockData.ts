@@ -59,6 +59,14 @@ const CREDIT_STATUSES = ['active', 'active', 'active', 'repaid', 'repaid', 'over
 let _cachedCreditLog: IngestionCreditLog[] | null = null;
 let _cachedAccounts: Account[] | null = null;
 let _cachedMetrics: Metrics | null = null;
+let _cachedWorkers: IngestionWorker[] | null = null;
+let _cachedPayments: IngestionPayment[] | null = null;
+let _cachedRepayments: IngestionRepayment[] | null = null;
+let _cachedRemittances: any[] | null = null;
+let _cachedSettlements: SettlementLog[] | null = null;
+let _cachedActivities: ActivityItem[] | null = null;
+let _cachedTransactions: Transaction[] | null = null;
+let _cachedLedgerState: LedgerState | null = null;
 
 function getCachedCreditLog(): IngestionCreditLog[] {
   if (!_cachedCreditLog) {
@@ -70,6 +78,7 @@ function getCachedCreditLog(): IngestionCreditLog[] {
 /* ─── Accounts for the ledger state ────────────────────────────────── */
 
 export function mockAccounts(): Account[] {
+  if (_cachedAccounts) return _cachedAccounts;
   const log = mockCreditLog();
   
   // Extract currency-specific exposures
@@ -92,18 +101,20 @@ export function mockAccounts(): Account[] {
   const eurCompanyBalance = Math.round(eurExposure * 0.2);
   const tryCompanyBalance = Math.round(tryExposure * 0.2);
   
-  return [
+  _cachedAccounts = [
     { id: 'POOL_DE_EUR', kind: 'pool', country: 'DE', currency: 'EUR', balance_minor: eurPoolBalance, min_buffer_minor: 50_000 },
     { id: 'POOL_TR_TRY', kind: 'pool', country: 'TR', currency: 'TRY', balance_minor: tryPoolBalance, min_buffer_minor: 100_000 },
     { id: 'COMPANY_GigExpress_EUR', kind: 'company', country: 'DE', currency: 'EUR', balance_minor: eurCompanyBalance, min_buffer_minor: 20_000 },
     { id: 'COMPANY_GigExpress_TRY', kind: 'company', country: 'TR', currency: 'TRY', balance_minor: tryCompanyBalance, min_buffer_minor: 50_000 },
     { id: 'FX_SETTLEMENT', kind: 'settlement', country: 'DE', currency: 'EUR', balance_minor: Math.round(eurPoolBalance * 0.15), min_buffer_minor: 10_000 },
   ];
+  return _cachedAccounts;
 }
 
 /* ─── Metrics (computed from credit log) ─────────────────────────────── */
 
 export function mockMetrics(): Metrics {
+  if (_cachedMetrics) return _cachedMetrics;
   const log = mockCreditLog();
   
   // Compute gross exposure in EUR equivalent
@@ -143,7 +154,7 @@ export function mockMetrics(): Metrics {
     ? Math.round(grossEurCents / activeAdvances)
     : 0;
   
-  return {
+  _cachedMetrics = {
     gross_usd_cents_open: grossEurCents,
     net_usd_cents_if_settle_now: netEurCents,
     queued_count: between(5, 20),
@@ -153,11 +164,13 @@ export function mockMetrics(): Metrics {
     active_advances: activeAdvances,
     avg_advance_eur_cents: avgAdvanceEur,
   };
+  return _cachedMetrics;
 }
 
 /* ─── Workers ────────────────────────────────────────────────────────── */
 
 export function mockWorkers(): IngestionWorker[] {
+  if (_cachedWorkers) return _cachedWorkers;
   const workers: IngestionWorker[] = [];
   // 250 DE + 250 TR
   for (let i = 0; i < 500; i++) {
@@ -203,12 +216,14 @@ export function mockWorkers(): IngestionWorker[] {
       source: 'csv',
     });
   }
-  return workers;
+  _cachedWorkers = workers;
+  return _cachedWorkers;
 }
 
 /* ─── Recent Payments ────────────────────────────────────────────────── */
 
 export function mockPayments(): IngestionPayment[] {
+  if (_cachedPayments) return _cachedPayments;
   const payments: IngestionPayment[] = [];
   for (let i = 0; i < 40; i++) {
     const country = rng() < 0.5 ? 'DE' : 'TR';
@@ -230,7 +245,8 @@ export function mockPayments(): IngestionPayment[] {
       timestamp: ts(between(0, 7)),
     });
   }
-  return payments.sort((a, b) => b.timestamp - a.timestamp);
+  _cachedPayments = payments.sort((a, b) => b.timestamp - a.timestamp);
+  return _cachedPayments;
 }
 
 /* ─── Credit Log (advances) — SINGLE SOURCE OF TRUTH ─────────────────── */
@@ -314,6 +330,7 @@ export function mockCreditLog(): IngestionCreditLog[] {
 /* ─── Settlements ────────────────────────────────────────────────────── */
 
 export function mockSettlements(): SettlementLog[] {
+  if (_cachedSettlements) return _cachedSettlements;
   const logs: SettlementLog[] = [];
   for (let i = 0; i < 8; i++) {
     const daysAgo = i * 3 + between(0, 2);
@@ -337,12 +354,14 @@ export function mockSettlements(): SettlementLog[] {
       created_at: new Date(Date.now() - daysAgo * 86400000).toISOString(),
     });
   }
-  return logs;
+  _cachedSettlements = logs;
+  return _cachedSettlements;
 }
 
 /* ─── Repayments ─────────────────────────────────────────────────────── */
 
 export function mockRepayments(): IngestionRepayment[] {
+  if (_cachedRepayments) return _cachedRepayments;
   const repayments: IngestionRepayment[] = [];
   for (let i = 0; i < 30; i++) {
     const country = rng() < 0.5 ? 'DE' : 'TR';
@@ -362,12 +381,14 @@ export function mockRepayments(): IngestionRepayment[] {
       created_at: new Date(Date.now() - between(25, 60) * 86400000).toISOString(),
     });
   }
-  return repayments;
+  _cachedRepayments = repayments;
+  return _cachedRepayments;
 }
 
 /* ─── Activity Feed ──────────────────────────────────────────────────── */
 
 export function mockActivities(): ActivityItem[] {
+  if (_cachedActivities) return _cachedActivities;
   const now = Math.floor(Date.now() / 1000);
   const log = mockCreditLog();
   
@@ -406,14 +427,16 @@ export function mockActivities(): ActivityItem[] {
     }
   }
   
-  return activities.sort((a, b) => b.timestamp - a.timestamp);
+  _cachedActivities = activities.sort((a, b) => b.timestamp - a.timestamp);
+  return _cachedActivities;
 }
 
 /* ─── Transactions for the table ─────────────────────────────────────── */
 
 export function mockTransactions(): Transaction[] {
+  if (_cachedTransactions) return _cachedTransactions;
   const payments = mockPayments();
-  return payments.map((p, i) => ({
+  _cachedTransactions = payments.map((p) => ({
     id: p.id,
     timestamp: p.timestamp,
     type: p.service_type,
@@ -427,11 +450,13 @@ export function mockTransactions(): Transaction[] {
       : 'PENDING',
     idempotency_key: p.idempotency_key,
   }));
+  return _cachedTransactions;
 }
 
 /* ─── Remittances (FX transfers) ─────────────────────────────────────── */
 
 export function mockRemittances(): import('../hooks/api').IngestionRemittance[] {
+  if (_cachedRemittances) return _cachedRemittances;
   const remittances: import('../hooks/api').IngestionRemittance[] = [];
   for (let i = 0; i < 25; i++) {
     const isEurToTry = rng() > 0.35;
@@ -463,13 +488,15 @@ export function mockRemittances(): import('../hooks/api').IngestionRemittance[] 
       source: 'csv',
     });
   }
-  return remittances.sort((a, b) => b.timestamp - a.timestamp);
+  _cachedRemittances = remittances.sort((a, b) => b.timestamp - a.timestamp);
+  return _cachedRemittances;
 }
 
 /* ─── Full mock state ────────────────────────────────────────────────── */
 
 export function mockLedgerState(): LedgerState {
-  return {
+  if (_cachedLedgerState) return _cachedLedgerState;
+  _cachedLedgerState = {
     accounts: mockAccounts(),
     open_obligations: [
       { id: 1, from_pool: 'POOL_DE_EUR', to_pool: 'POOL_TR_TRY', amount_usd_cents: 25000_00, status: 'open', created_at: ts(1) },
@@ -483,4 +510,5 @@ export function mockLedgerState(): LedgerState {
       { id: 2, from_pool: 'POOL_TR_TRY', to_pool: 'worker-tr-45', amount_minor: 6300_00, status: 'queued', created_at: ts(0) },
     ],
   };
+  return _cachedLedgerState;
 }
