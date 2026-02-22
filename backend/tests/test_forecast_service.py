@@ -37,6 +37,38 @@ def _seed_payment_history(country: str, amounts: list[int]) -> None:
             )
 
 
+def _seed_worker_payment_history(
+    country: str,
+    company_id: str,
+    worker_id: str,
+    amounts: list[int],
+) -> None:
+    with get_db() as conn:
+        country_id = get_country_id(conn, country)
+        base_ts = datetime(2026, 2, 1, 10, 0, 0)
+        for idx, amount in enumerate(amounts):
+            created_at = (base_ts + timedelta(hours=idx * 6)).strftime("%Y-%m-%d %H:%M:%S")
+            conn.execute(
+                """
+                INSERT INTO payments(
+                    company_id, worker_id, country_id, amount_minor, currency, service_type,
+                    idempotency_key, stripe_payment_intent_id, status, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'succeeded', ?)
+                """,
+                (
+                    company_id,
+                    worker_id,
+                    country_id,
+                    amount,
+                    "EUR",
+                    "routing",
+                    f"idem-{company_id}-{worker_id}-{idx}",
+                    f"pi_{company_id}_{worker_id}_{idx}",
+                    created_at,
+                ),
+            )
+
+
 def _seed_repayments(
     company_id: str,
     worker_id: str,
@@ -93,6 +125,11 @@ def test_underwriting_outputs_are_bounded() -> None:
     assert 0.0 <= result["p_default"] <= 1.0
     assert result["risk_band"] in {"low", "medium", "high"}
     assert 0.0 <= result["fair_lending_disparate_impact_ratio"] <= 1.0
+    assert 0.0 <= result["overdraft_risk_score"] <= 1.0
+    assert result["overdraft_risk_band"] in {"low", "medium", "high", "critical"}
+    assert result["max_credit_limit_minor"] >= 0
+    assert 0.0 <= result["overdraft_limit_utilization"] <= 1.0
+    assert result["overdraft_analysis_method"] == "overdraft-risk-v1"
 
 
 def test_country_underwriting_is_worker_level_with_min_12(monkeypatch) -> None:
@@ -126,6 +163,42 @@ def test_company_income_signal_endpoint_logic() -> None:
     assert result["company_id"] == "company-1"
     assert result["method"] in {"catboost-underwriting-v1", "heuristic-underwriting-v1"}
     assert 0.0 <= result["p_default"] <= 1.0
+    assert 0.0 <= result["overdraft_risk_score"] <= 1.0
+    assert result["max_credit_limit_minor"] >= 0
+
+
+def test_overdraft_limit_reduces_for_defaulted_worker() -> None:
+    history = [9600, 9800, 10000, 10200, 10100, 10300, 10400, 10600, 10800, 10700, 10900, 11000]
+    _seed_worker_payment_history("COUNTRY_A", "company-good", "worker-good", history)
+    _seed_worker_payment_history("COUNTRY_A", "company-bad", "worker-bad", history)
+
+    _seed_repayments(
+        "company-good",
+        "worker-good",
+        [
+            ("2026-02-01 10:00:00", 4000, "2026-02-01 18:00:00", 4000),
+            ("2026-02-08 10:00:00", 4000, "2026-02-08 18:00:00", 4000),
+            ("2026-02-15 10:00:00", 4000, "2026-02-16 09:00:00", 4000),
+        ],
+    )
+    _seed_repayments(
+        "company-bad",
+        "worker-bad",
+        [
+            ("2026-02-01 10:00:00", 4000, None, None),
+            ("2026-02-08 10:00:00", 4000, None, None),
+            ("2026-02-15 10:00:00", 4000, "2026-03-30 10:00:00", 1200),
+        ],
+    )
+
+    with get_db() as conn:
+        good = get_income_signal(conn, "worker-good", "2026-02-P2", company_id="company-good")
+        bad = get_income_signal(conn, "worker-bad", "2026-02-P2", company_id="company-bad")
+
+    assert good["default_state"] in {"current", "delinquent"}
+    assert bad["default_state"] == "default"
+    assert bad["overdraft_risk_score"] >= good["overdraft_risk_score"]
+    assert bad["max_credit_limit_minor"] < good["max_credit_limit_minor"]
 
 
 def test_default_state_uses_repayment_history() -> None:

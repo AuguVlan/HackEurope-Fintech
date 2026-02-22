@@ -13,30 +13,11 @@ import { CatboostPanel } from './CatboostPanel';
 import type { Transaction } from './WorkerTransactionTable'
 // import { toast } from '../lib/toast';
 
-<<<<<<< HEAD
 const PAYMENT_STATUS_TO_TABLE_STATUS: Record<string, string> = {
   succeeded: 'EXECUTED',
   requires_confirmation: 'PENDING',
   processing: 'PENDING',
   failed: 'FAILED',
-=======
-const MOCK_METRICS = {
-  gross_usd_cents_open: 5000000, 
-  net_usd_cents_if_settle_now: 1250000, 
-  queued_count: 14,
-  compression_ratio: 75
-};
-
-const MOCK_LEDGER_STATE = {
-  accounts: [
-    { currency: 'USD', balance_minor: 2500000, id: 'pool-1' },
-    { currency: 'EUR', balance_minor: 1800000, id: 'pool-2' },
-    { currency: 'TRY', balance_minor: 42500000, id: 'pool-3' }
-  ],
-  open_obligations: [
-    { id: '1', from_pool: 'POOL_A', to_pool: 'POOL_B', amount_usd_cents: 50000, status: 'open' }
-  ]
->>>>>>> 9d1638336db81f9b7098542b2f101ec8014cfa78
 };
 
 const queryClient = new QueryClient({
@@ -51,6 +32,7 @@ const queryClient = new QueryClient({
 export const DashboardContent: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isSettling, setIsSettling] = useState(false);
+  const [settleError, setSettleError] = useState<string | null>(null);
   // const [transactionDetail, setTransactionDetail] = useState<Transaction | null>(null);
 
   const ingestion = useIngestionData();
@@ -132,6 +114,7 @@ export const DashboardContent: React.FC = () => {
     .slice(0, 8);
 
   const handleSettleClick = async () => {
+    setSettleError(null);
     setIsSettling(true);
     try {
       const response = await api.runSettlement();
@@ -143,10 +126,11 @@ export const DashboardContent: React.FC = () => {
         queryClient.invalidateQueries({ queryKey: ['ledgerState'] });
         queryClient.invalidateQueries({ queryKey: ['metrics'] });
       } else {
-        // toast(data.message || 'Settlement failed', 'error');
+        setSettleError('Settlement did not return an id.');
       }
     } catch (error: any) {
-      // toast(error.message || 'Settlement failed', 'error');
+      const detail = error?.response?.data?.detail || error?.message || 'Settlement failed.';
+      setSettleError(String(detail));
     } finally {
       setIsSettling(false);
     }
@@ -187,6 +171,7 @@ export const DashboardContent: React.FC = () => {
                   isLoading={metricsLoading}
                   onSettleClick={handleSettleClick}
                   isSettling={isSettling}
+                  settleError={settleError}
                 />
 
                 <MetricsPanel

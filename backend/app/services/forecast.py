@@ -23,6 +23,13 @@ DELINQUENT_DAYS = 7
 DEFAULT_DAYS = 30
 DELINQUENT_MISSED = 1
 DEFAULT_MISSED = 2
+OVERDRAFT_VOLATILITY_CAP = 0.8
+OVERDRAFT_BASE_LIMIT_RATIO = 0.55
+OVERDRAFT_MAX_LIMIT_RATIO = 0.9
+
+
+def _clamp(value: float, lower: float = 0.0, upper: float = 1.0) -> float:
+    return max(lower, min(upper, value))
 
 def _moving_average(values: list[int], window: int = 3) -> int:
     if not values:
@@ -361,6 +368,101 @@ def _risk_band(p_default: float) -> str:
     return "low"
 
 
+def _overdraft_risk_band(score: float) -> str:
+    if score >= 0.75:
+        return "critical"
+    if score >= 0.55:
+        return "high"
+    if score >= 0.3:
+        return "medium"
+    return "low"
+
+
+def _overdraft_analysis(
+    inflows: list[int],
+    baseline_minor: int,
+    current_minor: int,
+    p_default: float,
+    trigger_state: str,
+    advance_minor: int,
+    repayment_metrics: dict[str, float | int | str] | None = None,
+) -> dict[str, float | int | str]:
+    repayment = repayment_metrics or {}
+    repayment_samples = int(repayment.get("repayment_samples", 0))
+    repayment_ratio = float(repayment.get("repayment_ratio", 1.0 if repayment_samples == 0 else 0.0))
+    on_time_rate = float(repayment.get("repayment_on_time_rate", 0.75 if repayment_samples == 0 else 0.0))
+    missed_count = int(repayment.get("repayment_missed_count", 0))
+    avg_days_late = float(repayment.get("repayment_avg_days_late", 0.0))
+    default_state = str(repayment.get("default_state", "unknown"))
+
+    volatility = _coefficient_of_variation([float(v) for v in inflows[-BASELINE_WINDOW:]])
+    volatility_factor = _clamp(volatility / OVERDRAFT_VOLATILITY_CAP)
+    drawdown_ratio = 0.0
+    if baseline_minor > 0 and current_minor < baseline_minor:
+        drawdown_ratio = (baseline_minor - current_minor) / baseline_minor
+    drawdown_factor = _clamp(drawdown_ratio)
+
+    missed_factor = _clamp(missed_count / 3.0)
+    on_time_penalty = _clamp(1.0 - on_time_rate)
+    repayment_penalty = _clamp(1.0 - min(1.0, repayment_ratio))
+    lateness_factor = _clamp(avg_days_late / DEFAULT_DAYS)
+    behavior_penalty = (
+        0.45 * missed_factor
+        + 0.25 * on_time_penalty
+        + 0.2 * repayment_penalty
+        + 0.1 * lateness_factor
+    ) if repayment_samples > 0 else 0.2
+
+    risk_score = (
+        0.48 * _clamp(p_default)
+        + 0.2 * volatility_factor
+        + 0.12 * drawdown_factor
+        + 0.15 * behavior_penalty
+        + (0.04 if trigger_state == "famine" else 0.0)
+    )
+    if default_state == "delinquent":
+        risk_score = max(risk_score, 0.62)
+    elif default_state == "default":
+        risk_score = max(risk_score, 0.85)
+    risk_score = round(_clamp(risk_score), 4)
+    risk_band = _overdraft_risk_band(risk_score)
+
+    base_capacity = int(round(max(0, baseline_minor) * OVERDRAFT_BASE_LIMIT_RATIO))
+    stability_multiplier = _clamp(1.0 - (0.45 * volatility_factor) - (0.3 * drawdown_factor), 0.25, 1.1)
+    if repayment_samples == 0:
+        repayment_multiplier = 0.85
+    else:
+        repayment_multiplier = 0.7 + (0.25 * on_time_rate) + (0.15 * min(1.0, repayment_ratio)) - (0.2 * _clamp(missed_count / 2.0))
+        repayment_multiplier = _clamp(repayment_multiplier, 0.2, 1.2)
+    risk_multiplier = _clamp(1.05 - risk_score, 0.08, 1.0)
+
+    max_credit_limit = int(round(base_capacity * stability_multiplier * repayment_multiplier * risk_multiplier))
+    hard_cap = int(round(max(0, baseline_minor) * OVERDRAFT_MAX_LIMIT_RATIO))
+    max_credit_limit = min(max_credit_limit, hard_cap)
+
+    if default_state == "default":
+        max_credit_limit = min(max_credit_limit, int(round(max(0, baseline_minor) * 0.08)))
+    elif risk_band == "critical":
+        max_credit_limit = min(max_credit_limit, int(round(max(0, baseline_minor) * 0.15)))
+
+    if baseline_minor >= MIN_DELTA_MINOR and risk_band in {"low", "medium"} and max_credit_limit < MIN_DELTA_MINOR:
+        max_credit_limit = MIN_DELTA_MINOR
+
+    max_credit_limit = max(0, max_credit_limit)
+    utilization_ratio = round(_clamp(advance_minor / max_credit_limit) if max_credit_limit > 0 else 0.0, 4)
+    confidence = min(0.95, 0.45 + len(inflows) / 120.0 + min(0.15, repayment_samples / 50.0))
+
+    return {
+        "overdraft_risk_score": risk_score,
+        "overdraft_risk_band": risk_band,
+        "max_credit_limit_minor": int(max_credit_limit),
+        "overdraft_headroom_minor": int(max(0, max_credit_limit - max(0, advance_minor))),
+        "overdraft_limit_utilization": utilization_ratio,
+        "overdraft_analysis_confidence": round(confidence, 3),
+        "overdraft_analysis_method": "overdraft-risk-v1",
+    }
+
+
 def _fallback_underwriting(values: list[int], confidence_with_history: float = 0.6) -> tuple[float, str, float]:
     history = values[-BASELINE_WINDOW:] if values else []
     current = values[-1] if values else 0
@@ -477,6 +579,7 @@ def _build_income_signal(
     payment_rows: list[sqlite3.Row],
     period: str,
     underwriting: tuple[float, str, float] | None = None,
+    repayment_metrics: dict[str, float | int | str] | None = None,
 ) -> dict:
     inflows = [int(r["amount_minor"]) for r in payment_rows]
 
@@ -485,6 +588,15 @@ def _build_income_signal(
     expected_outflow = repayment_minor
     p_default, method, model_confidence = underwriting or _pd_from_catboost(inflows)
     fair_ratio, fair_status = _fair_lending_audit(payment_rows, p_default)
+    overdraft_analysis = _overdraft_analysis(
+        inflows,
+        baseline,
+        current,
+        p_default,
+        trigger,
+        advance_minor,
+        repayment_metrics=repayment_metrics,
+    )
 
     net_minor = expected_inflow - expected_outflow
     trigger_confidence = 0.9 if trigger != "stable" else 0.75
@@ -508,6 +620,7 @@ def _build_income_signal(
         "risk_band": risk_band,
         "fair_lending_disparate_impact_ratio": fair_ratio,
         "fair_lending_audit_status": fair_status,
+        **overdraft_analysis,
     }
 
 
@@ -525,13 +638,19 @@ def get_income_signal(
     company_id: str | None = None,
 ) -> dict:
     payment_rows = _load_worker_payment_history(conn, worker_id, company_id)
-    signal = _build_income_signal({"worker_id": worker_id, "company_id": company_id}, payment_rows, period)
+    inflows = [int(r["amount_minor"]) for r in payment_rows]
+    p_default, method, model_confidence = _pd_from_catboost(inflows)
     repayment_rows = _load_repayment_history(conn, worker_id, company_id)
     repayment_metrics = _repayment_metrics(repayment_rows)
     adjustment = float(repayment_metrics.get("repayment_risk_adjustment", 0.0))
     if adjustment != 0.0:
-        adjusted = min(0.99, max(0.01, signal["p_default"] + adjustment))
-        signal["p_default"] = round(adjusted, 4)
-        signal["risk_band"] = _risk_band(signal["p_default"])
+        p_default = round(min(0.99, max(0.01, p_default + adjustment)), 4)
+    signal = _build_income_signal(
+        {"worker_id": worker_id, "company_id": company_id},
+        payment_rows,
+        period,
+        underwriting=(p_default, method, model_confidence),
+        repayment_metrics=repayment_metrics,
+    )
     signal.update(repayment_metrics)
     return signal

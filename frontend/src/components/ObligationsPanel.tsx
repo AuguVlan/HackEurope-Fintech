@@ -11,6 +11,7 @@ interface ObligationsPanelProps {
   isLoading?: boolean;
   onSettleClick?: () => void;
   isSettling?: boolean;
+  settleError?: string | null;
 }
 
 export const ObligationsPanel: React.FC<ObligationsPanelProps> = ({
@@ -20,6 +21,7 @@ export const ObligationsPanel: React.FC<ObligationsPanelProps> = ({
   isLoading,
   onSettleClick,
   isSettling,
+  settleError,
 }) => {
   // Group obligations by pool pair
   const poolPairs = new Map<string, number>();
@@ -108,10 +110,13 @@ export const ObligationsPanel: React.FC<ObligationsPanelProps> = ({
         variant="secondary"
         className="w-full"
         onClick={onSettleClick}
-        disabled={isSettling || obligations.length === 0}
+        disabled={Boolean(isSettling || isLoading)}
       >
         {isSettling ? 'Settling...' : 'Run Settlement'}
       </Button>
+      {settleError && (
+        <p className="mt-2 text-sm text-destructive">{settleError}</p>
+      )}
     </Card>
   );
 };

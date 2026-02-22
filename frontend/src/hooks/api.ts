@@ -90,6 +90,13 @@ export interface ForecastSignal {
   risk_band: 'low' | 'medium' | 'high' | string;
   fair_lending_disparate_impact_ratio: number;
   fair_lending_audit_status: string;
+  overdraft_risk_score: number;
+  overdraft_risk_band: 'low' | 'medium' | 'high' | 'critical' | string;
+  max_credit_limit_minor: number;
+  overdraft_headroom_minor: number;
+  overdraft_limit_utilization: number;
+  overdraft_analysis_confidence: number;
+  overdraft_analysis_method: string;
 }
 
 export interface IncomeSignal extends ForecastSignal {

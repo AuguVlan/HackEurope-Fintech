@@ -10,6 +10,7 @@ const DEFAULT_WORKER_ID = 'worker-acme';
 const DEFAULT_COMPANY_ID = 'acme';
 
 const riskVariant = (riskBand?: string): BadgeVariant => {
+  if (riskBand === 'critical') return 'danger';
   if (riskBand === 'high') return 'danger';
   if (riskBand === 'medium') return 'warning';
   if (riskBand === 'low') return 'success';
@@ -224,6 +225,9 @@ export const CatboostPanel: React.FC = () => {
                 <Badge variant={riskVariant(countryForecast.data.risk_band)}>
                   {countryForecast.data.risk_band.toUpperCase()} RISK
                 </Badge>
+                <Badge variant={riskVariant(countryForecast.data.overdraft_risk_band)}>
+                  OD {countryForecast.data.overdraft_risk_band.toUpperCase()}
+                </Badge>
               </div>
 
               <Progress
@@ -245,6 +249,14 @@ export const CatboostPanel: React.FC = () => {
                   value={`${(countryForecast.data.confidence * 100).toFixed(1)}%`}
                 />
                 <Stat label="Trigger" value={countryForecast.data.trigger_state} />
+                <Stat
+                  label="Overdraft Risk"
+                  value={`${(countryForecast.data.overdraft_risk_score * 100).toFixed(1)}%`}
+                />
+                <Stat
+                  label="Max Credit Limit"
+                  value={formatCurrency(countryForecast.data.max_credit_limit_minor, 'EUR')}
+                />
               </div>
             </div>
           )}
@@ -289,6 +301,9 @@ export const CatboostPanel: React.FC = () => {
                 <Badge variant={riskVariant(workerSignal.data.risk_band)}>
                   {workerSignal.data.risk_band.toUpperCase()} RISK
                 </Badge>
+                <Badge variant={riskVariant(workerSignal.data.overdraft_risk_band)}>
+                  OD {workerSignal.data.overdraft_risk_band.toUpperCase()}
+                </Badge>
                 <Badge variant="info">{workerSignal.data.default_state.toUpperCase()}</Badge>
               </div>
 
@@ -319,6 +334,14 @@ export const CatboostPanel: React.FC = () => {
                 <Stat
                   label="Risk Adjustment"
                   value={workerSignal.data.repayment_risk_adjustment.toFixed(3)}
+                />
+                <Stat
+                  label="Overdraft Risk"
+                  value={`${(workerSignal.data.overdraft_risk_score * 100).toFixed(1)}%`}
+                />
+                <Stat
+                  label="Max Credit Limit"
+                  value={formatCurrency(workerSignal.data.max_credit_limit_minor, 'EUR')}
                 />
               </div>
             </div>
