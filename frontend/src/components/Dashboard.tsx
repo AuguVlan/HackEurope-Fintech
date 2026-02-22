@@ -496,27 +496,6 @@ export const DashboardContent: React.FC = () => {
               accounts={ledgerState.accounts}
               isLoading={stateLoading}
             />
-
-            <Card className="col-span-full">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">Transaction Details</h3>
-                <button className="text-muted-foreground hover:text-foreground">x</button>
-              </div>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="text-muted-foreground">From</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">To</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Amount (USD)</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Status</p>
-                </div>
-              </div>
-            </Card>
           </div>
         </main>
       </div>
