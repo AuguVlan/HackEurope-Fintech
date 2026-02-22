@@ -3,9 +3,9 @@ import { api } from './api';
 import type { LedgerState, Metrics, IngestionData } from './api';
 
 // ── Backend connectivity flag ──────────────────────────────────────
-// Set to true when the backend is running and accessible.
-// When false, all queries are disabled to prevent CORS / 404 / 500 spam.
-const BACKEND_ENABLED = false;
+// Enabled by default. Set VITE_BACKEND_ENABLED=false to disable API calls.
+const BACKEND_ENABLED =
+  String((import.meta as any).env?.VITE_BACKEND_ENABLED ?? 'true').toLowerCase() !== 'false';
 
 const REFETCH_INTERVAL = 15_000;
 
@@ -16,8 +16,14 @@ const EMPTY_INGESTION: IngestionData = {
   state: EMPTY_STATE,
   metrics: EMPTY_METRICS,
   recent_payments: [],
+  recent_repayments: [],
+  recent_remittances: [],
+  workers: [],
   settlements: [],
   credit_log: [],
+  repositories: [],
+  generated_at: '',
+  net_positions: [],
 } as IngestionData;
 
 export const useLedgerState = () => {
