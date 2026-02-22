@@ -1,15 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Sidebar, Navbar } from './Layout';
 import { BalanceGrid } from './BalanceCard';
 import { WorkerTransactionTable } from './WorkerTransactionTable';
-import { ObligationsPanel } from './ObligationsPanel';
 import { MetricsPanel } from './MetricsPanel';
 import { ActivityFeed } from './ActivityFeed';
 import { api } from '../hooks/api';
 import { useIngestionData } from '../hooks/useApi';
 import { Card } from './ui';
 import { CatboostPanel } from './CatboostPanel';
+import { CurrencyPools } from './CurrencyPools';
+import {
+  mockLedgerState, mockMetrics, mockTransactions, mockActivities,
+  mockCreditLog, mockSettlements,
+} from '../lib/mockData';
 import type { Transaction } from './WorkerTransactionTable'
 // import { toast } from '../lib/toast';
 
@@ -38,15 +42,27 @@ export const DashboardContent: React.FC = () => {
   // const [transactionDetail, setTransactionDetail] = useState<Transaction | null>(null);
 
   const ingestion = useIngestionData();
-  const ledgerState = ingestion.data?.state || { accounts: [], open_obligations: [], queued_payouts: [] };
-  const metrics = ingestion.data?.metrics || {
-    gross_usd_cents_open: 0,
-    net_usd_cents_if_settle_now: 0,
-    queued_count: 0,
-    transactions_today: 0,
-  };
-  const stateLoading = ingestion.isLoading;
-  const metricsLoading = ingestion.isLoading;
+
+  // ── Mock data (stable across renders) ──
+  const MOCK_STATE = useMemo(() => mockLedgerState(), []);
+  const MOCK_METRICS = useMemo(() => mockMetrics(), []);
+  const MOCK_TRANSACTIONS = useMemo(() => mockTransactions(), []);
+  const MOCK_ACTIVITIES = useMemo(() => mockActivities(), []);
+  const MOCK_CREDIT_LOG = useMemo(() => mockCreditLog(), []);
+
+  // Use backend data when available, fall back to mock
+  const hasBackendData = !!(ingestion.data?.state?.accounts?.length);
+  const ledgerState = hasBackendData
+    ? ingestion.data!.state
+    : MOCK_STATE;
+  const metrics = hasBackendData
+    ? (ingestion.data!.metrics || MOCK_METRICS)
+    : MOCK_METRICS;
+  const creditLog = hasBackendData
+    ? (ingestion.data?.credit_log || [])
+    : MOCK_CREDIT_LOG;
+  const stateLoading = false; // never show skeleton — we always have mock data
+  const metricsLoading = false;
   // Group accounts by currency
   const currencyTotals = ledgerState?.accounts.reduce(
     (acc, account) => {
@@ -92,9 +108,11 @@ export const DashboardContent: React.FC = () => {
     status: String(obligation.status).toUpperCase(),
   }));
 
-  const transactions: Transaction[] = paymentTransactions.length > 0 ? paymentTransactions : obligationTransactions;
+  const transactions: Transaction[] = hasBackendData
+    ? (paymentTransactions.length > 0 ? paymentTransactions : obligationTransactions)
+    : MOCK_TRANSACTIONS;
 
-  const activities = [
+  const activities = hasBackendData ? [
     ...(ingestion.data?.settlements || []).slice(0, 4).map((row) => ({
       id: `settlement-${row.id}`,
       type: 'settlement_batch' as const,
@@ -113,7 +131,7 @@ export const DashboardContent: React.FC = () => {
     })),
   ]
     .sort((a, b) => b.timestamp - a.timestamp)
-    .slice(0, 8);
+    .slice(0, 8) : MOCK_ACTIVITIES;
 
   const handleSettleClick = async () => {
     setSettleError(null);
@@ -155,9 +173,12 @@ export const DashboardContent: React.FC = () => {
             <div>
               <h1 className="text-3xl font-bold text-foreground mb-2">Ledger Dashboard</h1>
               <p className="text-muted-foreground">
-                Real-time view of synthetic liquidity settlement across all pools
+                Real-time view of TideBridge settlement across all pools
               </p>
             </div>
+
+            {/* Currency Pools */}
+            <CurrencyPools />
 
             {/* Balance Cards */}
             <BalanceGrid data={currencyTotals} isLoading={stateLoading} />
@@ -166,23 +187,13 @@ export const DashboardContent: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Obligations & Metrics */}
               <div className="lg:col-span-2 space-y-6">
-                <ObligationsPanel
-                  obligations={ledgerState?.open_obligations || []}
-                  grossUsdCents={metrics?.gross_usd_cents_open || 0}
-                  netUsdCents={metrics?.net_usd_cents_if_settle_now || 0}
-                  isLoading={metricsLoading}
-                  onSettleClick={handleSettleClick}
-                  isSettling={isSettling}
-                  settleError={settleError}
-                />
-
                 <MetricsPanel
                   metrics={metrics || {
                     gross_usd_cents_open: 0,
                     net_usd_cents_if_settle_now: 0,
                     queued_count: 0,
                   }}
-                  creditLog={ingestion.data?.credit_log || []}
+                  creditLog={creditLog}
                   isLoading={metricsLoading}
                 />
               </div>
@@ -191,7 +202,7 @@ export const DashboardContent: React.FC = () => {
               <div className="space-y-6">
                 <ActivityFeed
                   activities={activities}
-                  isLoading={ingestion.isLoading}
+                  isLoading={false}
                 />
               </div>
             </div>

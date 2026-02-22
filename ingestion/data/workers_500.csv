@@ -1,4 +1,4 @@
-worker_id,name,platform,country,currency,archetype,months_active,avg_wage,income_volatility,income_state,debt_to_income,repayment_count,on_time_rate,avg_days_late,default_count,disposable_income
+worker_id,name,platform,country,currency,cont,months_active,avg_wage,income_volatility,income_state,debt_to_income,repayment_count,on_time_rate,avg_days_late,default_count,disposable_income
 WRK-000001,Leon Neumann,GigExpress,DE,EUR,rock_solid,16,1525.52,130.35,FEAST,0.0,22,1.0,0.0,0,796.08
 WRK-000002,Ida Zimmermann,GigExpress,DE,EUR,rock_solid,35,1867.8,197.56,FEAST,0.0,25,1.0,0.0,0,905.62
 WRK-000003,Eva Hartmann,GigExpress,DE,EUR,rock_solid,17,1633.89,100.29,FEAST,0.0,22,1.0,0.0,0,807.67

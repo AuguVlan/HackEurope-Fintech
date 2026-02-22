@@ -12,7 +12,7 @@ interface MetricsPanelProps {
 }
 
 const EXPOSURE_COLORS = ['#22c55e', '#38bdf8', '#525252'];
-const LOAN_COLORS = ['#34d399', '#f59e0b', '#f43f5e', '#525252'];
+const LOAN_COLORS = ['#22c55e', '#f59e0b', '#f43f5e', '#525252']; // low=green, medium=amber, high=red, unknown=gray
 
 export const MetricsPanel: React.FC<MetricsPanelProps> = ({ metrics, creditLog = [], isLoading }) => {
   const compressionRatio = metrics.gross_usd_cents_open > 0
@@ -31,29 +31,35 @@ export const MetricsPanel: React.FC<MetricsPanelProps> = ({ metrics, creditLog =
       ]
     : [{ name: 'No Exposure', value: 1 }];
 
-  const bucketTotals = creditLog.reduce(
+  // Group credit log by risk band (CatBoost archetype-driven categories)
+  // Normalize all amounts to EUR-equivalent for cross-currency aggregation
+  const EUR_TRY_RATE = 36.5;
+  const riskBandTotals = creditLog.reduce(
     (acc, row) => {
-      const amount = Math.max(row.advance_minor || 0, 0);
-      if (amount < 35_000) {
-        acc.small += amount;
-      } else if (amount < 55_000) {
-        acc.medium += amount;
-      } else {
-        acc.large += amount;
-      }
+      const raw = Math.max(row.advance_minor || 0, 0);
+      // Convert TRY to EUR-equivalent, keep EUR as-is
+      const amountEur = (row.currency === 'TRY' || row.worker_id?.includes('-tr-'))
+        ? Math.round(raw / EUR_TRY_RATE)
+        : raw;
+      const band = (row.risk_band || 'unknown').toLowerCase();
+      if (band === 'low') acc.low += amountEur;
+      else if (band === 'medium') acc.medium += amountEur;
+      else if (band === 'high') acc.high += amountEur;
+      else acc.unknown += amountEur;
       return acc;
     },
-    { small: 0, medium: 0, large: 0 }
+    { low: 0, medium: 0, high: 0, unknown: 0 }
   );
 
-  const totalGrantedExposure = bucketTotals.small + bucketTotals.medium + bucketTotals.large;
+  const totalGrantedExposure = riskBandTotals.low + riskBandTotals.medium + riskBandTotals.high + riskBandTotals.unknown;
   const hasLoanExposure = totalGrantedExposure > 0;
   const avgExposurePerLoan = creditLog.length > 0 ? Math.round(totalGrantedExposure / creditLog.length) : 0;
   const loanExposureData = hasLoanExposure
     ? [
-        { name: 'Small (<350 EUR)', value: bucketTotals.small },
-        { name: 'Medium (350-550 EUR)', value: bucketTotals.medium },
-        { name: 'Large (>=550 EUR)', value: bucketTotals.large },
+        { name: 'Low Risk', value: riskBandTotals.low },
+        { name: 'Medium Risk', value: riskBandTotals.medium },
+        { name: 'High Risk', value: riskBandTotals.high },
+        ...(riskBandTotals.unknown > 0 ? [{ name: 'Unknown', value: riskBandTotals.unknown }] : []),
       ].filter((row) => row.value > 0)
     : [{ name: 'No Loans', value: 1 }];
 
@@ -146,7 +152,7 @@ export const MetricsPanel: React.FC<MetricsPanelProps> = ({ metrics, creditLog =
           </div>
 
           <div className="rounded-xl border border-border/20 p-3">
-            <p className="text-muted-foreground text-xs mb-2">Exposure per Loan Granted</p>
+            <p className="text-muted-foreground text-xs mb-2">Loan Volume by Risk (EUR equiv.)</p>
             <div className="h-40">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>

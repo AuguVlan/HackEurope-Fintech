@@ -189,6 +189,7 @@ export interface IngestionCreditLog {
   confidence: number;
   status: string;
   days_late: number;
+  currency?: string;
 }
 
 export interface IngestionData {

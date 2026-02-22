@@ -36,7 +36,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           <div className="brand-icon">⚡</div>
           <div>
             <h1 className="brand-title">Ledger</h1>
-            <p className="brand-sub">Synthetic Liquidity</p>
+            <p className="brand-sub">TideBridge</p>
           </div>
         </div>
 
@@ -79,7 +79,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
         <button onClick={onMenuClick} className="menu-toggle">☰</button>
         <div>
           <h2 className="navbar-title">Admin Dashboard</h2>
-          <p className="navbar-sub">Synthetic Liquidity Settlement</p>
+          <p className="navbar-sub">TideBridge Settlement</p>
         </div>
       </div>
 

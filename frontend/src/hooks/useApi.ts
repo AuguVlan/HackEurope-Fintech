@@ -2,8 +2,12 @@ import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { api } from './api';
 import type { LedgerState, Metrics, IngestionData } from './api';
 
-// Only refetch when backend is healthy; otherwise stale-but-visible data wins.
-const REFETCH_INTERVAL = 15_000; // 15 s (was 5 s — too aggressive when backend is flaky)
+// ── Backend connectivity flag ──────────────────────────────────────
+// Set to true when the backend is running and accessible.
+// When false, all queries are disabled to prevent CORS / 404 / 500 spam.
+const BACKEND_ENABLED = false;
+
+const REFETCH_INTERVAL = 15_000;
 
 /** Empty but structurally correct fallbacks so the UI never goes blank. */
 const EMPTY_STATE: LedgerState = { accounts: [], open_obligations: [], queued_payouts: [] };
@@ -23,6 +27,7 @@ export const useLedgerState = () => {
       const response = await api.getState();
       return response.data;
     },
+    enabled: BACKEND_ENABLED,
     placeholderData: keepPreviousData,
     refetchInterval: REFETCH_INTERVAL,
     staleTime: 10_000,
@@ -38,6 +43,7 @@ export const useMetrics = () => {
       const response = await api.getMetrics();
       return response.data;
     },
+    enabled: BACKEND_ENABLED,
     placeholderData: keepPreviousData,
     refetchInterval: REFETCH_INTERVAL,
     staleTime: 10_000,
@@ -53,6 +59,7 @@ export const useCountryForecast = (country: 'COUNTRY_A' | 'COUNTRY_B', period?: 
       const response = await api.getForecastSignal(country, period);
       return response.data;
     },
+    enabled: BACKEND_ENABLED,
     placeholderData: keepPreviousData,
     refetchInterval: REFETCH_INTERVAL,
     staleTime: 10_000,
@@ -68,7 +75,7 @@ export const useWorkerIncomeSignal = (workerId?: string, companyId?: string, per
       const response = await api.getIncomeSignal(workerId, companyId, period);
       return response.data;
     },
-    enabled: !!workerId,
+    enabled: BACKEND_ENABLED && !!workerId,
     placeholderData: keepPreviousData,
     refetchInterval: REFETCH_INTERVAL,
     staleTime: 10_000,
@@ -83,6 +90,7 @@ export const useSettlements = () => {
       const response = await api.getSettlements();
       return response.data;
     },
+    enabled: BACKEND_ENABLED,
     placeholderData: keepPreviousData,
     refetchInterval: REFETCH_INTERVAL,
     staleTime: 10_000,
@@ -97,6 +105,7 @@ export const useIngestionData = () => {
       const response = await api.getIngestionData();
       return response.data;
     },
+    enabled: BACKEND_ENABLED,
     placeholderData: EMPTY_INGESTION,
     refetchInterval: REFETCH_INTERVAL,
     staleTime: 10_000,
@@ -114,7 +123,7 @@ export const useAccountBalance = (accountId?: string) => {
       const account = response.data.accounts.find(a => a.id === accountId);
       return account;
     },
-    enabled: !!accountId,
+    enabled: BACKEND_ENABLED && !!accountId,
     placeholderData: keepPreviousData,
     refetchInterval: REFETCH_INTERVAL,
   });
