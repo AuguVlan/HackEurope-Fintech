@@ -1,6 +1,17 @@
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { api } from './api';
 import type { LedgerState, Metrics, IngestionData } from './api';
+import {
+  mockLedgerState,
+  mockMetrics,
+  mockPayments,
+  mockRepayments,
+  mockRemittances,
+  mockWorkers,
+  mockSettlements,
+  mockCreditLog,
+  mockActivities,
+} from '../lib/mockData';
 
 // ── Backend connectivity flag ──────────────────────────────────────
 // Enabled by default. Set VITE_BACKEND_ENABLED=false to disable API calls.
@@ -9,20 +20,18 @@ const BACKEND_ENABLED =
 
 const REFETCH_INTERVAL = 15_000;
 
-/** Empty but structurally correct fallbacks so the UI never goes blank. */
-const EMPTY_STATE: LedgerState = { accounts: [], open_obligations: [], queued_payouts: [] };
-const EMPTY_METRICS: Metrics = { gross_usd_cents_open: 0, net_usd_cents_if_settle_now: 0, queued_count: 0, transactions_today: 0 };
-const EMPTY_INGESTION: IngestionData = {
-  state: EMPTY_STATE,
-  metrics: EMPTY_METRICS,
-  recent_payments: [],
-  recent_repayments: [],
-  recent_remittances: [],
-  workers: [],
-  settlements: [],
-  credit_log: [],
+/** Rich mock fallbacks so the UI is never blank — populated from mockData.ts */
+const MOCK_INGESTION: IngestionData = {
+  state: mockLedgerState(),
+  metrics: mockMetrics(),
+  recent_payments: mockPayments(),
+  recent_repayments: mockRepayments(),
+  recent_remittances: mockRemittances(),
+  workers: mockWorkers(),
+  settlements: mockSettlements(),
+  credit_log: mockCreditLog(),
   repositories: [],
-  generated_at: '',
+  generated_at: new Date().toISOString(),
   net_positions: [],
 } as IngestionData;
 
@@ -112,7 +121,7 @@ export const useIngestionData = () => {
       return response.data;
     },
     enabled: BACKEND_ENABLED,
-    placeholderData: EMPTY_INGESTION,
+    placeholderData: MOCK_INGESTION,
     refetchInterval: REFETCH_INTERVAL,
     staleTime: 10_000,
     retry: 1,

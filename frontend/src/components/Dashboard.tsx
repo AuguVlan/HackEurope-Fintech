@@ -12,6 +12,16 @@ import { CatboostPanel } from './CatboostPanel';
 import { CurrencyPools } from './CurrencyPools';
 import type { Transaction } from './WorkerTransactionTable';
 import { formatCurrency } from '../lib/utils';
+import {
+  mockLedgerState,
+  mockMetrics,
+  mockCreditLog,
+  mockWorkers,
+  mockRemittances,
+  mockPayments,
+  mockActivities,
+  mockTransactions,
+} from '../lib/mockData';
 
 const PAYMENT_STATUS_TO_TABLE_STATUS: Record<string, string> = {
   succeeded: 'EXECUTED',
@@ -53,18 +63,14 @@ export const DashboardContent: React.FC = () => {
   });
 
   const ingestion = useIngestionData();
-  const ledgerState = ingestion.data?.state || { accounts: [], open_obligations: [], queued_payouts: [] };
-  const metrics = ingestion.data?.metrics || {
-    gross_usd_cents_open: 0,
-    net_usd_cents_if_settle_now: 0,
-    queued_count: 0,
-    transactions_today: 0,
-  };
-  const creditLog = ingestion.data?.credit_log || [];
-  const workers = ingestion.data?.workers || [];
-  const remittances = ingestion.data?.recent_remittances || [];
-  const stateLoading = ingestion.isLoading;
-  const metricsLoading = ingestion.isLoading;
+  const hasBackendData = !!(ingestion.data?.credit_log?.length);
+  const ledgerState = hasBackendData ? ingestion.data!.state : mockLedgerState();
+  const metrics = hasBackendData ? ingestion.data!.metrics : mockMetrics();
+  const creditLog = hasBackendData ? ingestion.data!.credit_log : mockCreditLog();
+  const workers = hasBackendData ? ingestion.data!.workers : mockWorkers().slice(0, 50);
+  const remittances = hasBackendData ? ingestion.data!.recent_remittances : mockRemittances();
+  const stateLoading = false;
+  const metricsLoading = false;
 
   const currencyTotals = ledgerState.accounts.reduce(
     (acc, account) => {
@@ -84,17 +90,18 @@ export const DashboardContent: React.FC = () => {
     [] as Array<{ currency: string; total: number; accounts: number }>
   );
 
-  const paymentTransactions: Transaction[] = (ingestion.data?.recent_payments || []).map((payment) => ({
+  const recentPayments = hasBackendData ? (ingestion.data?.recent_payments || []) : mockPayments();
+  const paymentTransactions: Transaction[] = recentPayments.map((payment) => ({
     id: payment.id,
     timestamp: payment.timestamp,
     type: payment.service_type || 'payment',
-    from_account: `COMPANY_${payment.company_id}`,
-    to_account: `POOL_${payment.country}`,
+    from_account: `COMPANY_${payment.company_id}_${payment.currency}`,
+    to_account: `POOL_${payment.country}_${payment.currency}`,
     amount_minor: payment.amount_minor,
     currency: payment.currency,
     status: PAYMENT_STATUS_TO_TABLE_STATUS[payment.status] || String(payment.status).toUpperCase(),
     idempotency_key: payment.idempotency_key,
-    source: payment.source || 'unknown',
+    source: payment.source || 'csv',
   }));
 
   const obligationTransactions: Transaction[] = ledgerState.open_obligations.map((obligation) => ({
@@ -113,26 +120,28 @@ export const DashboardContent: React.FC = () => {
     paymentTransactions.length > 0 ? paymentTransactions : obligationTransactions;
   const topWorkers = workers;
 
-  const activities = [
-    ...(ingestion.data?.settlements || []).slice(0, 4).map((row) => ({
-      id: `settlement-${row.id}`,
-      type: 'settlement_batch' as const,
-      timestamp: Math.floor(new Date(row.created_at).getTime() / 1000),
-      data: row,
-      description: `${row.from_country} -> ${row.to_country} ${row.status}`,
-      icon: 'CheckCircle2',
-    })),
-    ...(ingestion.data?.recent_payments || []).slice(0, 4).map((payment) => ({
-      id: `payment-${payment.id}`,
-      type: 'obligation_created' as const,
-      timestamp: payment.timestamp,
-      data: payment,
-      description: `${payment.worker_id} ${payment.status} ${payment.amount_minor / 100} ${payment.currency}`,
-      icon: 'FileText',
-    })),
-  ]
-    .sort((a, b) => b.timestamp - a.timestamp)
-    .slice(0, 8);
+  const activities = hasBackendData
+    ? [
+        ...(ingestion.data?.settlements || []).slice(0, 4).map((row) => ({
+          id: `settlement-${row.id}`,
+          type: 'settlement_batch' as const,
+          timestamp: Math.floor(new Date(row.created_at).getTime() / 1000),
+          data: row,
+          description: `${row.from_country} -> ${row.to_country} ${row.status}`,
+          icon: 'CheckCircle2',
+        })),
+        ...(ingestion.data?.recent_payments || []).slice(0, 4).map((payment) => ({
+          id: `payment-${payment.id}`,
+          type: 'obligation_created' as const,
+          timestamp: payment.timestamp,
+          data: payment,
+          description: `${payment.worker_id} ${payment.status} ${payment.amount_minor / 100} ${payment.currency}`,
+          icon: 'FileText',
+        })),
+      ]
+        .sort((a, b) => b.timestamp - a.timestamp)
+        .slice(0, 8)
+    : mockActivities();
 
   const handleSettleClick = async () => {
     setSettleError(null);
@@ -218,20 +227,6 @@ export const DashboardContent: React.FC = () => {
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex-1 flex flex-col lg:ml-64">
         <Navbar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
-<<<<<<< HEAD
-        <main className="flex-1 overflow-auto">
-          <div className="p-6 max-w-7xl mx-auto space-y-8">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground mb-2">Ledger Dashboard</h1>
-              <p className="text-muted-foreground">Real-time view of TideBridge settlement across all pools</p>
-            </div>
-
-            <CurrencyPools />
-            <BalanceGrid data={currencyTotals} isLoading={stateLoading} />
-
-=======
-
-        {/* Page Content */}
         <main className="flex-1 overflow-auto bg-gradient-to-br from-background via-background to-background/95">
           <div className="p-6 lg:p-8 max-w-7xl mx-auto space-y-8">
             {/* Professional Header */}
@@ -331,11 +326,8 @@ export const DashboardContent: React.FC = () => {
               </div>
             </div>
 
-            {/* Currency Pools with FX Overview */}
             <CurrencyPools />
 
-            {/* Main Grid */}
->>>>>>> 3ebba738c79d5ccb4ac1d055cd3ef7b2f555a6ad
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2 space-y-6">
                 <MetricsPanel

@@ -165,13 +165,42 @@ export function mockWorkers(): IngestionWorker[] {
     const names = country === 'DE' ? DE_NAMES : TR_NAMES;
     const name = pick(names);
     const archetype = pick([...ARCHETYPES]);
+    const currency = country === 'DE' ? 'EUR' : 'TRY';
+    const riskProfile = RISK_BANDS[archetype];
+    const avgWage = country === 'DE'
+      ? between(2500_00, 8000_00)
+      : between(30000_00, 90000_00);
+    const repaymentCount = between(archetype === 'red_flags' ? 3 : 12, 48);
+    const onTimeRate = archetype === 'rock_solid' ? 0.95 + rng() * 0.05
+      : archetype === 'good_volatile' ? 0.80 + rng() * 0.15
+      : archetype === 'stretched_thin' ? 0.60 + rng() * 0.25
+      : 0.30 + rng() * 0.35;
+    const defaultCount = archetype === 'red_flags' ? between(1, 5)
+      : archetype === 'stretched_thin' ? between(0, 2)
+      : 0;
+    const incomeState = archetype === 'rock_solid' ? 'FEAST'
+      : archetype === 'good_volatile' ? (rng() > 0.5 ? 'FEAST' : 'NORMAL')
+      : archetype === 'stretched_thin' ? 'NORMAL'
+      : 'FAMINE';
     workers.push({
       worker_id: `worker-${country.toLowerCase()}-${i + 1}`,
       company_id: 'GigExpress',
       country,
-      succeeded_payments: between(archetype === 'red_flags' ? 3 : 12, 48),
+      succeeded_payments: repaymentCount,
       catboost_ready: archetype !== 'red_flags' || rng() > 0.3,
       latest_payment_at: isoDate(between(0, 5)),
+      name,
+      platform: pick(['GigExpress', 'RideNow', 'CityDrive', 'QuickCab']),
+      currency,
+      months_active: between(2, 36),
+      avg_wage_minor: avgWage,
+      income_state: incomeState,
+      repayment_count: repaymentCount,
+      on_time_rate: parseFloat(onTimeRate.toFixed(3)),
+      avg_days_late: archetype === 'red_flags' ? between(5, 30) : archetype === 'stretched_thin' ? between(1, 10) : 0,
+      default_count: defaultCount,
+      disposable_income_minor: Math.round(avgWage * (0.15 + rng() * 0.25)),
+      source: 'csv',
     });
   }
   return workers;
@@ -398,6 +427,43 @@ export function mockTransactions(): Transaction[] {
       : 'PENDING',
     idempotency_key: p.idempotency_key,
   }));
+}
+
+/* ─── Remittances (FX transfers) ─────────────────────────────────────── */
+
+export function mockRemittances(): import('../hooks/api').IngestionRemittance[] {
+  const remittances: import('../hooks/api').IngestionRemittance[] = [];
+  for (let i = 0; i < 25; i++) {
+    const isEurToTry = rng() > 0.35;
+    const currSent = isEurToTry ? 'EUR' : 'TRY';
+    const currRecv = isEurToTry ? 'TRY' : 'EUR';
+    const destCountry = isEurToTry ? 'TR' : 'DE';
+    const sentMinor = isEurToTry ? between(500_00, 5000_00) : between(15000_00, 180000_00);
+    const fxRate = 34.50 + rng() * 1.0;
+    const receivedMinor = isEurToTry
+      ? Math.round(sentMinor * fxRate)
+      : Math.round(sentMinor / fxRate);
+    const wCountry = isEurToTry ? 'de' : 'tr';
+    const wIdx = between(1, 250);
+    const daysAgo = between(0, 30);
+    remittances.push({
+      id: i + 1,
+      tx_id: `fx-${uuid()}`,
+      worker_id: `worker-${wCountry}-${wIdx}`,
+      stripe_payment_intent: `pi_${uuid()}`,
+      date: isoDate(daysAgo),
+      amount_sent_minor: sentMinor,
+      currency_sent: currSent,
+      amount_received_minor: receivedMinor,
+      currency_received: currRecv,
+      exchange_rate: parseFloat(fxRate.toFixed(4)),
+      destination_country: destCountry,
+      status: pick(['completed', 'completed', 'completed', 'completed', 'pending']),
+      timestamp: ts(daysAgo),
+      source: 'csv',
+    });
+  }
+  return remittances.sort((a, b) => b.timestamp - a.timestamp);
 }
 
 /* ─── Full mock state ────────────────────────────────────────────────── */

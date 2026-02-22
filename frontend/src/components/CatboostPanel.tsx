@@ -3,6 +3,7 @@ import { Brain } from 'lucide-react';
 import { Badge, Card, Skeleton } from './ui';
 import { useIngestionData, useSettlements } from '../hooks/useApi';
 import { formatCurrency, formatNumber } from '../lib/utils';
+import { mockCreditLog, mockSettlements, mockRepayments } from '../lib/mockData';
 
 type BadgeVariant = 'success' | 'warning' | 'danger' | 'info';
 
@@ -32,9 +33,10 @@ export const CatboostPanel: React.FC = () => {
   const ingestion = useIngestionData();
   const settlements = useSettlements();
 
-  const creditLogData = ingestion.data?.credit_log || [];
-  const fxRows = settlements.data || ingestion.data?.settlements || [];
-  const repaymentData = ingestion.data?.recent_repayments || [];
+  const hasBackendData = !!(ingestion.data?.credit_log?.length);
+  const creditLogData = hasBackendData ? ingestion.data!.credit_log : mockCreditLog();
+  const fxRows = hasBackendData ? (settlements.data || ingestion.data?.settlements || []) : mockSettlements();
+  const repaymentData = hasBackendData ? (ingestion.data?.recent_repayments || []) : mockRepayments();
 
   const displayedCreditLog = useMemo(() => {
     return creditLogData.slice(0, MAX_LOG_ROWS).map((row) => ({
