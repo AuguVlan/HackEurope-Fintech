@@ -10,6 +10,7 @@ export { ObligationsPanel } from './ObligationsPanel';
 export { LiquidityHealthPanel } from './LiquidityHealth';
 export { MetricsPanel } from './MetricsPanel';
 export { ActivityFeed } from './ActivityFeed';
+export { CatboostPanel } from './CatboostPanel';
 
 // Table
 export { WorkerTransactionTable } from './WorkerTransactionTable';

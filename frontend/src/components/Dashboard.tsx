@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Sidebar, Navbar } from './Layout';
 import { BalanceGrid } from './BalanceCard';
@@ -7,12 +7,11 @@ import { ObligationsPanel } from './ObligationsPanel';
 import { LiquidityHealthPanel } from './LiquidityHealth';
 import { MetricsPanel } from './MetricsPanel';
 import { ActivityFeed } from './ActivityFeed';
-import { useLedgerState, useMetrics } from '../hooks/useApi';
 import { mockActivityFeed, api } from '../hooks/api';
 import { Card } from './ui';
+import { CatboostPanel } from './CatboostPanel';
 import type { Transaction } from './WorkerTransactionTable'
 // import { toast } from '../lib/toast';
-import type { Account } from '../hooks/api';
 
 const MOCK_METRICS = {
   gross_usd_cents_open: 5000000, 
@@ -86,9 +85,9 @@ export const DashboardContent: React.FC = () => {
   const handleSettleClick = async () => {
     setIsSettling(true);
     try {
-      const response = await api.runSettlement({ threshold_usd_cents: 0 });
-      const data = response.data as any;
-      if (data.ok) {
+      const response = await api.runSettlement();
+      const data = response.data as { id?: number };
+      if (typeof data.id === 'number') {
         // toast('Settlement executed successfully', 'success');
         // Auto-refetch after settlement
         queryClient.invalidateQueries({ queryKey: ['ledgerState'] });
@@ -160,6 +159,8 @@ export const DashboardContent: React.FC = () => {
                 />
               </div>
             </div>
+
+            <CatboostPanel />
 
             {/* Transaction Table */}
             <WorkerTransactionTable

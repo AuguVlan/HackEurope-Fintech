@@ -25,7 +25,9 @@ app.add_middleware(
     # init_db()
 frontend_dist_dir = ROOT_DIR / "frontend" / "dist"
 frontend_assets_dir = frontend_dist_dir / "assets"
-dashboard_file = frontend_dist_dir / "dashboard.html"
+dashboard_file = frontend_dist_dir / "index.html"
+if not dashboard_file.exists():
+    dashboard_file = frontend_dist_dir / "dashboard.html"
 
 if frontend_assets_dir.exists():
     app.mount("/assets", StaticFiles(directory=str(frontend_assets_dir)), name="assets")

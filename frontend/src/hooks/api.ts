@@ -1,6 +1,7 @@
 import axios, { AxiosInstance } from 'axios';
 
 const API_BASE_URL = 'http://localhost:8000';
+const OPERATOR_TOKEN = (import.meta as any).env?.VITE_OPERATOR_TOKEN || 'demo-operator-token';
 
 export const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -72,6 +73,60 @@ export interface Metrics {
   transactions_today?: number;
 }
 
+export interface ForecastSignal {
+  country: string;
+  period: string;
+  expected_inflow_minor: number;
+  expected_outflow_minor: number;
+  net_minor: number;
+  confidence: number;
+  method: 'catboost-underwriting-v1' | 'heuristic-underwriting-v1' | string;
+  baseline_income_minor: number;
+  current_earnings_minor: number;
+  trigger_state: 'famine' | 'feast' | 'stable' | string;
+  micro_credit_advance_minor: number;
+  auto_repayment_minor: number;
+  p_default: number;
+  risk_band: 'low' | 'medium' | 'high' | string;
+  fair_lending_disparate_impact_ratio: number;
+  fair_lending_audit_status: string;
+}
+
+export interface IncomeSignal extends ForecastSignal {
+  worker_id: string;
+  company_id: string | null;
+  default_state: 'current' | 'delinquent' | 'default' | 'unknown' | string;
+  default_state_confidence: number;
+  repayment_samples: number;
+  repayment_paid_samples: number;
+  repayment_total_due_minor: number;
+  repayment_total_paid_minor: number;
+  repayment_ratio: number;
+  repayment_on_time_rate: number;
+  repayment_avg_days_late: number;
+  repayment_p90_days_late: number;
+  repayment_max_days_late: number;
+  repayment_amount_cv: number;
+  repayment_interval_cv: number;
+  repayment_missed_count: number;
+  repayment_risk_adjustment: number;
+}
+
+export interface SettlementLog {
+  id: number;
+  period: string;
+  from_country: string;
+  to_country: string;
+  base_transfer_minor: number;
+  forecast_adjustment_minor: number;
+  recommended_minor: number;
+  executed_minor: number | null;
+  status: string;
+  rationale: string;
+  stripe_transfer_id: string | null;
+  created_at: string;
+}
+
 export interface PayoutRequest {
   from_pool: string;
   to_pool: string;
@@ -100,6 +155,22 @@ export const api = {
   // State
   getState: () => apiClient.get<LedgerState>('/state'),
   getMetrics: () => apiClient.get<Metrics>('/metrics'),
+  getForecastSignal: (country: 'COUNTRY_A' | 'COUNTRY_B', period?: string) =>
+    apiClient.get<ForecastSignal>('/forecast', {
+      params: {
+        country,
+        ...(period ? { period } : {}),
+      },
+    }),
+  getIncomeSignal: (workerId: string, companyId?: string, period?: string) =>
+    apiClient.get<IncomeSignal>('/income-signal', {
+      params: {
+        worker_id: workerId,
+        ...(companyId ? { company_id: companyId } : {}),
+        ...(period ? { period } : {}),
+      },
+    }),
+  getSettlements: () => apiClient.get<SettlementLog[]>('/settlements'),
 
   // Payout
   createPayout: (data: PayoutRequest) => 
@@ -108,8 +179,10 @@ export const api = {
     }),
 
   // Settlement
-  runSettlement: (data: SettleRunRequest = {}) => 
-    apiClient.post('/settle/run', data),
+  runSettlement: (_data: SettleRunRequest = {}) =>
+    apiClient.post('/settlements/run', {}, {
+      headers: { 'X-Operator-Token': OPERATOR_TOKEN },
+    }),
 
   // Admin
   topup: (accountId: string, amountMinor: number) =>
@@ -226,7 +299,11 @@ export async function getState(): Promise<{ accounts: { id: string; kind: string
 }
 
 export async function postSettleRun(threshold_usd_cents: number) {
-  return post<SettleRunResult>('/settle/run', { threshold_usd_cents });
+  void threshold_usd_cents;
+  const response = await apiClient.post('/settlements/run', {}, {
+    headers: { 'X-Operator-Token': OPERATOR_TOKEN },
+  });
+  return response.data;
 }
 
 export async function postAdminTopup(account_id: string, amount_minor: number) {
