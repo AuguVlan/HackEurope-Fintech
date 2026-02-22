@@ -40,8 +40,8 @@ export const LiquidityHealthPanel: React.FC<LiquidityHealthPanelProps> = ({ acco
         {sortedAccounts.map((account) => {
           const ratio = account.balance_minor / account.min_buffer_minor;
           const percentage = Math.min(ratio * 100, 100);
-          const status = healthStatus(account.balance_minor, account.min_buffer_minor);
-          const statusClass = healthStatusClass(account.balance_minor, account.min_buffer_minor);
+          const status = healthStatus(percentage);
+          const statusClass = healthStatusClass(percentage);
 
           return (
             <div key={account.id} className="space-y-2">

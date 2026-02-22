@@ -2,7 +2,7 @@
 export { Sidebar, Navbar } from './Layout';
 
 // Dashboard
-export { Dashboard } from './Dashboard';
+export { default as Dashboard } from './Dashboard';
 
 // Cards & Panels
 export { BalanceCard, BalanceGrid } from './BalanceCard';

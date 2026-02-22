@@ -23,8 +23,10 @@ const PAYMENT_STATUS_TO_TABLE_STATUS: Record<string, string> = {
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 2000,
+      staleTime: 10_000,
       retry: 1,
+      retryDelay: 3000,
+      refetchOnWindowFocus: false,   // prevent refetch storms on tab switch
     },
   },
 });

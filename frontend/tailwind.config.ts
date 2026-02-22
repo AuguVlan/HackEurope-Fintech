@@ -9,17 +9,17 @@ const config = {
   theme: {
     extend: {
       colors: {
-        border: "hsl(var(--border))",
+        border: "hsl(var(--tw-border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         primary: {
-          DEFAULT: "hsl(var(--primary))",
+          DEFAULT: "hsl(var(--tw-primary))",
           foreground: "hsl(var(--primary-foreground))",
         },
         secondary: {
-          DEFAULT: "hsl(var(--secondary))",
+          DEFAULT: "hsl(var(--tw-secondary))",
           foreground: "hsl(var(--secondary-foreground))",
         },
         destructive: {
@@ -31,7 +31,7 @@ const config = {
           foreground: "hsl(var(--muted-foreground))",
         },
         accent: {
-          DEFAULT: "hsl(var(--accent))",
+          DEFAULT: "hsl(var(--tw-accent))",
           foreground: "hsl(var(--accent-foreground))",
         },
         popover: {
@@ -39,7 +39,7 @@ const config = {
           foreground: "hsl(var(--popover-foreground))",
         },
         card: {
-          DEFAULT: "hsl(var(--card))",
+          DEFAULT: "hsl(var(--tw-card))",
           foreground: "hsl(var(--card-foreground))",
         },
       },

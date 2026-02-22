@@ -70,4 +70,4 @@ catboost_info/
 
 # Temporary placeholder files
 PASTE_THE_PATH_PRINTED_ABOVE
-frontend/node_modules/*
+frontend/node_modules/*.vite/
